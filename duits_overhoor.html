@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Duits Overhoor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f4f0; color: #1a1a1a; min-height: 100vh; }
+
+  /* SETUP SCREEN */
+  #setup { max-width: 700px; margin: 0 auto; padding: 2rem 1.5rem; }
+  #setup h1 { font-size: 22px; font-weight: 600; margin-bottom: 0.5rem; }
+  #setup .sub { font-size: 14px; color: #666; margin-bottom: 2rem; }
+
+  .section-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; display: block; }
+
+  /* Theme grid */
+  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-bottom: 2rem; }
+  .theme-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1.5px solid #e5e4e0; border-radius: 10px; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .theme-item:hover { border-color: #aaa; background: #fafaf8; }
+  .theme-item.selected { border-color: #1a1a1a; background: #1a1a1a; color: white; }
+  .theme-item .cb { width: 16px; height: 16px; border: 1.5px solid currentColor; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; }
+  .theme-item.selected .cb::after { content: "✓"; }
+  .theme-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .theme-count { font-size: 11px; opacity: 0.6; }
+
+  .select-row { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .link-btn { font-size: 13px; color: #555; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; background: none; border: none; padding: 0; }
+  .link-btn:hover { color: #1a1a1a; }
+
+  /* Option toggles */
+  .option-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .opt-btn { padding: 8px 16px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 13px; background: white; cursor: pointer; color: #555; transition: all 0.15s; }
+  .opt-btn:hover { border-color: #aaa; color: #1a1a1a; }
+  .opt-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: white; }
+
+  /* Start button */
+  .start-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: #1a1a1a; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; }
+  .start-btn:hover { opacity: 0.85; }
+  .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  #word-count-info { font-size: 13px; color: #666; margin-top: 10px; }
+
+  /* QUIZ SCREEN */
+  #quiz { display: none; max-width: 620px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .quiz-progress { font-size: 13px; color: #666; }
+  .quiz-score { font-size: 14px; font-weight: 600; }
+  .progress-bar-bg { height: 5px; background: #e5e4e0; border-radius: 99px; margin-bottom: 1.5rem; }
+  .progress-bar-fill { height: 5px; background: #1a1a1a; border-radius: 99px; transition: width 0.4s; }
+
+  .skip-link { font-size: 12px; color: #aaa; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; display: block; margin-bottom: 1.25rem; background: none; border: none; padding: 0; }
+  .skip-link:hover { color: #666; }
+
+  .word-card { background: white; border: 1.5px solid #e5e4e0; border-radius: 14px; padding: 2rem 1.5rem; text-align: center; margin-bottom: 1.5rem; }
+  .word-theme { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+  .word-direction { font-size: 13px; color: #888; margin-bottom: 10px; }
+  .word-main { font-size: 30px; font-weight: 600; color: #1a1a1a; }
+
+  .input-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .answer-input { flex: 1; padding: 11px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 15px; color: #1a1a1a; background: white; outline: none; transition: border-color 0.15s; }
+  .answer-input:focus { border-color: #1a1a1a; }
+  .answer-input:disabled { background: #f9f9f7; }
+  .check-btn { padding: 11px 20px; background: #1a1a1a; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .check-btn:hover { opacity: 0.85; }
+  .check-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .feedback { border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-bottom: 1rem; display: none; }
+  .feedback.correct { background: #edf7ee; color: #2d6b30; display: block; border: 1px solid #b8e0ba; }
+  .feedback.wrong { background: #fdf0ef; color: #b33a36; display: block; border: 1px solid #f2c4c2; }
+  .feedback.typo { background: #fff8e6; color: #7a5c00; display: block; border: 1px solid #f0d98a; }
+
+  .quiz-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
+  .next-btn { padding: 10px 22px; background: #1a1a1a; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; display: none; }
+  .next-btn:hover { opacity: 0.85; }
+  .stop-btn { font-size: 13px; color: #999; cursor: pointer; background: none; border: none; text-decoration: underline; text-underline-offset: 3px; }
+  .stop-btn:hover { color: #555; }
+
+  .stats-mini { display: flex; gap: 16px; font-size: 13px; color: #888; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eeede9; }
+  .stat-mini-item { display: flex; align-items: center; gap: 5px; }
+
+  /* RESULT SCREEN */
+  #result { display: none; max-width: 620px; margin: 0 auto; padding: 2rem 1.5rem; }
+  #result h2 { font-size: 22px; font-weight: 600; margin-bottom: 1.5rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat-card { background: white; border: 1.5px solid #e5e4e0; border-radius: 12px; padding: 14px; text-align: center; }
+  .stat-num { font-size: 26px; font-weight: 600; }
+  .stat-lbl { font-size: 12px; color: #888; margin-top: 3px; }
+  .result-section { background: white; border: 1.5px solid #e5e4e0; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .result-section h3 { font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .word-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0efe9; font-size: 14px; }
+  .word-row:last-child { border-bottom: none; }
+  .word-row .nl { font-weight: 500; }
+  .word-row .de { color: #666; }
+  .result-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .result-btn { padding: 11px 22px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 14px; background: white; cursor: pointer; font-weight: 500; transition: all 0.15s; }
+  .result-btn:hover { border-color: #aaa; }
+  .result-btn.primary { background: #1a1a1a; color: white; border-color: #1a1a1a; }
+  .result-btn.primary:hover { opacity: 0.85; }
+
+  /* CONFIRM MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: 14px; padding: 1.5rem; max-width: 380px; width: 90%; }
+  .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .modal p { font-size: 14px; color: #555; margin-bottom: 1.25rem; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-btn { padding: 8px 18px; border-radius: 8px; font-size: 14px; cursor: pointer; border: 1.5px solid #e0e0e0; background: white; }
+  .modal-btn.confirm { background: #1a1a1a; color: white; border-color: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup">
+  <h1>🇩🇪 Duits Overhoor</h1>
+  <p class="sub">Selecteer thema's, kies richting en start de overhoring.</p>
+
+  <span class="section-label">Woordenlijsten</span>
+  <div class="select-row">
+    <button class="link-btn" onclick="selectAll()">Alles selecteren</button>
+    <button class="link-btn" onclick="selectNone()">Niets selecteren</button>
+  </div>
+  <div class="theme-grid" id="theme-grid"></div>
+
+  <span class="section-label">Richting</span>
+  <div class="option-row">
+    <button class="opt-btn active" data-group="dir" data-val="nl-de" onclick="selectOpt(this)">Nederlands → Duits</button>
+    <button class="opt-btn" data-group="dir" data-val="de-nl" onclick="selectOpt(this)">Duits → Nederlands</button>
+    <button class="opt-btn" data-group="dir" data-val="mix" onclick="selectOpt(this)">Gemengd</button>
+  </div>
+
+  <span class="section-label">Nakijken</span>
+  <div class="option-row">
+    <button class="opt-btn active" data-group="check" data-val="fuzzy" onclick="selectOpt(this)">Schrijffouten toegestaan (max 2)</button>
+    <button class="opt-btn" data-group="check" data-val="exact" onclick="selectOpt(this)">Exact correct</button>
+  </div>
+
+  <button class="start-btn" id="start-btn" onclick="startQuiz()">▶ Starten</button>
+  <p id="word-count-info"></p>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div id="quiz">
+  <div class="quiz-header">
+    <span class="quiz-progress" id="quiz-progress">Woord 1 van 50</span>
+    <span class="quiz-score" id="quiz-score">Score: 0%</span>
+  </div>
+  <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+
+  <button class="skip-link" id="skip-btn" onclick="showSkipModal()">Neem dit woord niet meer mee in de overhoring</button>
+
+  <div class="word-card">
+    <div class="word-theme" id="word-theme"></div>
+    <div class="word-direction" id="word-direction"></div>
+    <div class="word-main" id="word-display"></div>
+  </div>
+
+  <div class="input-row">
+    <input type="text" class="answer-input" id="answer-input" placeholder="Typ je antwoord..." autocomplete="off" autocorrect="off" spellcheck="false" />
+    <button class="check-btn" id="check-btn" onclick="checkAnswer()">Controleer</button>
+  </div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <div class="quiz-actions">
+    <button class="stop-btn" onclick="stopQuiz()">Stoppen</button>
+    <button class="next-btn" id="next-btn" onclick="nextWord()">Volgende →</button>
+  </div>
+
+  <div class="stats-mini">
+    <div class="stat-mini-item">✅ <span id="stat-correct">0</span> goed</div>
+    <div class="stat-mini-item">🔄 <span id="stat-repeat">0</span> herhalen</div>
+    <div class="stat-mini-item">⭕ <span id="stat-unseen">0</span> nog niet gezien</div>
+    <div class="stat-mini-item">🚫 <span id="stat-skipped">0</span> overgeslagen</div>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="result">
+  <h2 id="result-title">Overhoring afgerond!</h2>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-num" id="res-score">0%</div><div class="stat-lbl">Eindscore</div></div>
+    <div class="stat-card"><div class="stat-num" id="res-correct">0</div><div class="stat-lbl">Goed</div></div>
+    <div class="stat-card"><div class="stat-num" id="res-wrong">0</div><div class="stat-lbl">Fout</div></div>
+  </div>
+  <div class="result-section" id="wrong-section" style="display:none">
+    <h3>Woorden om te herhalen</h3>
+    <div id="wrong-list"></div>
+  </div>
+  <div class="result-section" id="skipped-section" style="display:none">
+    <h3>Overgeslagen woorden (<span id="skip-count">0</span>)</h3>
+    <p style="font-size:13px; color:#888; margin-bottom:8px;">Deze woorden zijn uit je woordenlijst verwijderd. Je kunt ze hieronder terugzetten.</p>
+    <div id="skip-list"></div>
+  </div>
+  <div class="result-actions">
+    <button class="result-btn primary" id="retry-wrong-btn" onclick="retryWrong()" style="display:none">Herhaal foutjes</button>
+    <button class="result-btn" onclick="goToSetup()">Nieuwe overhoring</button>
+    <button class="result-btn" onclick="showSetupWithState()">Zelfde instelling opnieuw</button>
+  </div>
+</div>
+
+<!-- SKIP MODAL -->
+<div class="modal-overlay" id="skip-modal">
+  <div class="modal">
+    <h3>Woord overslaan?</h3>
+    <p>"<span id="modal-word"></span>" komt dan niet meer terug in je overhoringen. Je kunt het achteraf terugzetten.</p>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal()">Annuleer</button>
+      <button class="modal-btn confirm" onclick="confirmSkip()">Ja, overslaan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const ALL_WORDS = [["Luchtvaart", "aankomen", "ankommen"], ["Luchtvaart", "aankomst", "Ankunft"], ["Luchtvaart", "aankomsttijd", "Ankunftszeit"], ["Luchtvaart", "aankondigen", "ansagen"], ["Luchtvaart", "aansluiting", "Anschluss"], ["Luchtvaart", "aansluiting halen", "den Anschluss erreichen"], ["Luchtvaart", "aansluiting missen", "den Anschluss verpassen"], ["Luchtvaart", "bagageafgifte", "Gepäckaufgabe"], ["Luchtvaart", "bestemming", "Reiseziel"], ["Luchtvaart", "binnenlandse vlucht", "Inlandflug"], ["Luchtvaart", "brandstof", "Brennstoff"], ["Luchtvaart", "burgerluchtvaart", "zivile Luftfahrt"], ["Luchtvaart", "charter", "Charterflug"], ["Luchtvaart", "configuratie", "Konfiguration"], ["Luchtvaart", "congestie", "Verkehrsüberlastung"], ["Luchtvaart", "continentale vlucht", "Kontinentalflug"], ["Luchtvaart", "controleren", "kontrollieren"], ["Luchtvaart", "dalen", "sinken"], ["Luchtvaart", "daling", "Anflug"], ["Luchtvaart", "dienstregeling", "Flugplan"], ["Luchtvaart", "doorverbinding", "Anschlussflug"], ["Luchtvaart", "file", "Stau"], ["Luchtvaart", "heenvlucht", "Hinflug"], ["Luchtvaart", "instappen", "einsteigen"], ["Luchtvaart", "intercontinentale vlucht", "Interkontinentalflug"], ["Luchtvaart", "jet-lag", "Jetlag"], ["Luchtvaart", "kerosine", "Kerosin"], ["Luchtvaart", "landen", "landen"], ["Luchtvaart", "landing", "Landung"], ["Luchtvaart", "landingsgestel", "Fahrwerk"], ["Luchtvaart", "landingsgestel intrekken", "das Fahrwerk einfahren"], ["Luchtvaart", "landingsgestel uitklappen", "das Fahrwerk ausfahren"], ["Luchtvaart", "lijnvliegtuig", "Linienflugzeug"], ["Luchtvaart", "lijnvlucht", "Linienflug"], ["Luchtvaart", "lokale tijd", "lokale Zeit"], ["Luchtvaart", "long-haul vlucht", "Langstreckenflug"], ["Luchtvaart", "luchtruim", "Luftraum"], ["Luchtvaart", "luchtvaartmaatschappij", "Fluggesellschaft"], ["Luchtvaart", "luchtverkeer", "Flugverkehr"], ["Luchtvaart", "met het vliegtuig", "mit dem Flugzeug"], ["Luchtvaart", "nachtstop", "Nachtstopp"], ["Luchtvaart", "omdraaitijd", "Umkehrzeit"], ["Luchtvaart", "opstijgen", "aufsteigen"], ["Luchtvaart", "overnemen", "übernehmen"], ["Luchtvaart", "oversteek", "Überflug"], ["Luchtvaart", "passagier", "Passagier"], ["Luchtvaart", "piekuur", "Spitzenzeit"], ["Luchtvaart", "push-back", "Push-Back"], ["Luchtvaart", "regelen", "regeln"], ["Luchtvaart", "reisroute", "Reisestrecke"], ["Luchtvaart", "rerouting", "Rerouting"], ["Luchtvaart", "retourticket", "Rückflugschein"], ["Luchtvaart", "routenet", "Streckenetz"], ["Luchtvaart", "samenwerken", "zusammenarbeiten"], ["Luchtvaart", "start", "Start"], ["Luchtvaart", "starten", "starten"], ["Luchtvaart", "stijging", "Aufstieg"], ["Luchtvaart", "stijgen", "aufsteigen"], ["Luchtvaart", "taxiën", "rollen"], ["Luchtvaart", "terugvlucht", "Rückflug"], ["Luchtvaart", "tijdsverschil", "Zeitunterschied"], ["Luchtvaart", "tijdzone", "Zeitzone"], ["Luchtvaart", "transatlantische vlucht", "Transatlantikflug"], ["Luchtvaart", "transit-reiziger", "Transitreisende"], ["Luchtvaart", "tussenlanding", "Zwischenlandung"], ["Luchtvaart", "uitstappen", "aussteigen"], ["Luchtvaart", "van brandstof voorzien", "mit Brennstoff versehen"], ["Luchtvaart", "veiligheid", "Sicherheit"], ["Luchtvaart", "veiligheidsmaatregelen", "Sicherheitsmaßnahmen"], ["Luchtvaart", "veiligheidsvoorschriften", "Sicherheitsvorschriften"], ["Luchtvaart", "vertraging", "Verspätung"], ["Luchtvaart", "vertrek", "Abflug"], ["Luchtvaart", "vertrekken", "abfliegen"], ["Luchtvaart", "vertrektijd", "Abflugzeit"], ["Luchtvaart", "vliegen", "fliegen"], ["Luchtvaart", "vliegroute", "Flugstrecke"], ["Luchtvaart", "vliegtuig", "Flugzeug"], ["Luchtvaart", "vliegtuig nemen", "das Flugzeug nehmen"], ["Luchtvaart", "vliegtuigtype", "Flugzeugtyp"], ["Luchtvaart", "vloot", "Flotte"], ["Luchtvaart", "vlucht", "Flug"], ["Luchtvaart", "wide-body vliegtuig", "Großraumflugzeug"], ["Luchthaven", "aankomsthal", "Ankunftshalle"], ["Luchthaven", "aankondigingsbord", "Ansagetafel"], ["Luchthaven", "afhandelen", "abfertigen"], ["Luchthaven", "afhandelingsagent", "Abfertigungsagent"], ["Luchthaven", "apotheek", "Apotheke"], ["Luchthaven", "autoverhuur", "Autovermietung"], ["Luchthaven", "bagageband", "Transportband"], ["Luchthaven", "bank", "Bank"], ["Luchthaven", "begane grond", "Erdgeschoss"], ["Luchthaven", "belastingvrije winkel", "Duty-Free-Shop"], ["Luchthaven", "brandweer", "Feuerwehr"], ["Luchthaven", "business-class lounge", "Businessclass-Lounge"], ["Luchthaven", "casino", "Spielkasino"], ["Luchthaven", "catering", "Catering"], ["Luchthaven", "conferentiezaal", "Konferenzraum"], ["Luchthaven", "dierenhotel", "Tierhotel"], ["Luchthaven", "douanegebied", "Zollbereich"], ["Luchthaven", "drogist", "Drogerie"], ["Luchthaven", "E.H.B.O.", "Erste Hilfe"], ["Luchthaven", "eerste/tweede verdieping", "erster/zweiter Stock"], ["Luchthaven", "gate", "Ausgang"], ["Luchthaven", "gebedsruimte", "Andachtsraum"], ["Luchthaven", "geldautomaat", "Geldautomat"], ["Luchthaven", "gevonden voorwerpen", "Fundsachen"], ["Luchthaven", "golfcentrum", "Golfzentrum"], ["Luchthaven", "grondwerktuigkundige", "Flugzeugmechaniker"], ["Luchthaven", "hangar", "Flugzeughalle"], ["Luchthaven", "inlichtingenbalie", "Informationsschalter"], ["Luchthaven", "junior-jet lounge", "Junior-Jet-Raum"], ["Luchthaven", "kantoor van luchtvaartmaatschappij", "Büro einer Fluggesellschaft"], ["Luchthaven", "kiosk", "Stand"], ["Luchthaven", "laden", "laden"], ["Luchthaven", "landingsbaan", "Landebahn"], ["Luchthaven", "lang/kort parkeren", "langes/kurzes Parken"], ["Luchthaven", "lift", "Aufzug"], ["Luchthaven", "loopband", "Laufband"], ["Luchthaven", "lossen", "entladen"], ["Luchthaven", "luchthavenpolitie", "Flughafenpolizei"], ["Luchthaven", "marechaussee", "Militärpolizei"], ["Luchthaven", "medische dienst", "Medizinischer Dienst"], ["Luchthaven", "monitor", "Monitor"], ["Luchthaven", "omroep", "Ansage"], ["Luchthaven", "ontmoetingspunt", "Treffpunkt"], ["Luchthaven", "operations", "Operations"], ["Luchthaven", "parkeergarage", "Parkhaus"], ["Luchthaven", "parkeren", "parken"], ["Luchthaven", "parking", "Parkplatz"], ["Luchthaven", "pier", "Flugsteig"], ["Luchthaven", "platform", "Sammelraum"], ["Luchthaven", "postkantoor", "Postamt"], ["Luchthaven", "reis boeken", "eine Reise buchen"], ["Luchthaven", "reisbureau", "Reisebüro"], ["Luchthaven", "roltrap", "Rolltreppe"], ["Luchthaven", "sauna", "Sauna"], ["Luchthaven", "self-service check-in", "Self-Service Check-in"], ["Luchthaven", "security", "Sicherheit"], ["Luchthaven", "slurf", "Finger"], ["Luchthaven", "startbaan", "Startbahn"], ["Luchthaven", "stationsgebouw", "Terminal"], ["Luchthaven", "taxibaan", "Rollbahn"], ["Luchthaven", "technische dienst", "Technischer Dienst"], ["Luchthaven", "telefoongesprek", "Telefongespräch"], ["Luchthaven", "telefooncel", "Telefonzelle"], ["Luchthaven", "touroperator", "Reiseveranstalter"], ["Luchthaven", "trap", "Treppe"], ["Luchthaven", "trolley", "Trolley"], ["Luchthaven", "verkeerstoren", "Kontrollturm"], ["Luchthaven", "vertraging", "Verspätung"], ["Luchthaven", "vertrekhal", "Abflughalle"], ["Luchthaven", "videoscherm", "Videoschirm"], ["Luchthaven", "VIP-lounge", "VIP-Lounge"], ["Luchthaven", "vracht", "Fracht"], ["Luchthaven", "vrachtafdeling", "Frachtabteilung"], ["Luchthaven", "wachtruimte", "Warteraum"], ["Luchthaven", "wisselautomaat", "Wechselautomat"], ["Luchthaven", "wisselen", "wechseln"], ["Luchthaven", "wisselkantoor", "Wechselstube"], ["Bemanningencentrum", "briefing", "Briefing"], ["Bemanningencentrum", "briefingkamer", "Briefingraum"], ["Bemanningencentrum", "daggeld", "Spesen"], ["Bemanningencentrum", "koffer pakken", "den Koffer packen"], ["Bemanningencentrum", "folder", "Broschüre"], ["Bemanningencentrum", "identiteitsbewijs", "Personalausweis"], ["Bemanningencentrum", "indeler", "Einsatzplaner"], ["Bemanningencentrum", "indelingen", "Einsatzplanung"], ["Bemanningencentrum", "informeren naar", "sich erkundigen nach"], ["Bemanningencentrum", "medische dienst", "Medizinischer Dienst"], ["Bemanningencentrum", "meldingstijd", "Meldezeit"], ["Bemanningencentrum", "op doorreis zijn", "sich auf der Durchreise befinden"], ["Bemanningencentrum", "paspoort", "Pass"], ["Bemanningencentrum", "postvakken", "Postfächer"], ["Bemanningencentrum", "reiskosten", "Reisekosten"], ["Bemanningencentrum", "reserve staan", "Bereitschaftsdienst haben"], ["Bemanningencentrum", "uniform", "Uniform"], ["Bemanningencentrum", "vaccinatiebewijs", "Impfausweis"], ["Bemanningencentrum", "verblijf", "Aufenthalt"], ["Bemanningencentrum", "visum", "Visum"], ["Bemanningencentrum", "vluchtschema", "Einsatzplan"], ["Bemanningencentrum", "zich melden", "sich melden"], ["Bemanning", "assistent purser", "Assistent-Purser"], ["Bemanning", "cabin attendant", "Flugbegleiter"], ["Bemanning", "captain", "Flugkapitän"], ["Bemanning", "collega", "Kollege"], ["Bemanning", "co-piloot", "Kopilot"], ["Bemanning", "deeltijd werken", "Teilzeit beschäftigt sein"], ["Bemanning", "dierensteward", "Tierbetreuer"], ["Bemanning", "full-time werken", "Vollzeit arbeiten"], ["Bemanning", "kinderbegeleidster", "Kinderbegleiterin"], ["Bemanning", "onbetaald verlof", "unbezahlter Urlaub"], ["Bemanning", "part-time werken", "Teilzeit beschäftigt sein"], ["Bemanning", "piloot", "Pilot"], ["Bemanning", "promotie maken", "befördert werden"], ["Bemanning", "senior purser", "Purser"], ["Bemanning", "stand-by", "Stand-by"], ["Bemanning", "steward", "Flugbegleiter"], ["Bemanning", "stewardess", "Flugbegleiterin"], ["Bemanning", "tolk", "Dolmetscher"], ["Bemanning", "trainee", "Auszubildende"], ["Passage", "aanvraagformulier", "Antragsformular"], ["Passage", "afhalen", "abholen"], ["Passage", "annuleren", "annullieren"], ["Passage", "attaché-koffer", "Diplomatenkoffer"], ["Passage", "bagage", "Gepäck"], ["Passage", "bagage afgiftepunt", "Gepäckabgabe"], ["Passage", "bagage inklaren", "Gepäck abgeben"], ["Passage", "bagage-afhandeling", "Gepäckabfertigung"], ["Passage", "bagageband", "Transportband"], ["Passage", "bagagebiljet", "Gepäckschein"], ["Passage", "bagagekluis", "Schließfach"], ["Passage", "bagagelabel", "Gepäckanhänger"], ["Passage", "bagagevolgsysteem", "Gepäckermittlung"], ["Passage", "balie", "Schalter"], ["Passage", "beauty case", "Kosmetikkoffer"], ["Passage", "bevestigen", "bestätigen"], ["Passage", "bezetting", "Besetzung"], ["Passage", "brengen", "bringen"], ["Passage", "consumptiebon", "Verzehrbon"], ["Passage", "digitaal inchecken", "digital einchecken"], ["Passage", "doorgelabelde bagage", "durchgechecktes Gepäck"], ["Passage", "doorlabelen", "durchchecken"], ["Passage", "doorverbinding", "Anschlussflug"], ["Passage", "downgrading", "Downgrading"], ["Passage", "e-ticket nummer", "E-Ticket-Nummer"], ["Passage", "frequent flyer programma", "Vielfliegerprogramm"], ["Passage", "gevonden voorwerpen", "Fundsachen"], ["Passage", "groepsreis", "Gruppenreise"], ["Passage", "grondpersoneel", "Bodenpersonal"], ["Passage", "handbagage", "Handgepäck"], ["Passage", "handtas", "Handtasche"], ["Passage", "helpdesk", "Helpdesk"], ["Passage", "in aanmerking komen voor", "in Betracht kommen"], ["Passage", "in de rij staan", "Schlange stehen"], ["Passage", "in-check", "Check-In"], ["Passage", "inchecken", "einchecken"], ["Passage", "inchecktijd", "Eincheckzeit"], ["Passage", "instapkaart", "Bordkarte"], ["Passage", "inwoner", "Einwohner"], ["Passage", "klachtenregistratie", "Beschwerdestelle"], ["Passage", "kledingzak", "Kleidersack"], ["Passage", "koffer", "Koffer"], ["Passage", "korting", "Ermäßigung"], ["Passage", "lidmaatschap", "Mitgliedschaft"], ["Passage", "miles overzicht", "Kontoauszug"], ["Passage", "minikar", "Kofferkuli"], ["Passage", "online inchecken", "online einchecken"], ["Passage", "online dienstregeling", "Online-Flugplan"], ["Passage", "overbagage", "Übergepäck"], ["Passage", "overbagage-tarief", "Übergepäcktarif"], ["Passage", "paraplu", "Regenschirm"], ["Passage", "passage-employé", "Bodenangestellte"], ["Passage", "reismand", "Tragekorb"], ["Passage", "reistas", "Reisetasche"], ["Passage", "reserveren", "reservieren"], ["Passage", "retourticket", "Rückflugticket"], ["Passage", "rijden", "fahren"], ["Passage", "rolstoel", "Rollstuhl"], ["Passage", "rugzak", "Rucksack"], ["Passage", "self-service incheck machine", "Self-Service Check-In-Schalter"], ["Passage", "slecht ter been zijn", "schlecht zu Fuß sein"], ["Passage", "slip van een ticket", "Coupon"], ["Passage", "staatsburger", "Staatsbürger"], ["Passage", "stoelkeuze", "Platzwahl"], ["Passage", "stoel online kiezen", "Sitzplatz online auswählen"], ["Passage", "tas", "Tasche"], ["Passage", "ticket", "Ticket"], ["Passage", "toegewezen stoel", "Zugeteilter Sitzplatz"], ["Passage", "touch screen", "Touchscreen"], ["Passage", "transfer-balie", "Transfer-Schalter"], ["Passage", "ummetje", "U.M."], ["Passage", "upgrading", "Upgrading"], ["Passage", "van tevoren", "vorher"], ["Passage", "verlengen", "verlängern"], ["Passage", "vertraging", "Verspätung"], ["Passage", "voordelen", "Vorteile"], ["Passage", "voucher", "Voucher"], ["Passage", "vrije bagage", "freies Gepäck"], ["Passage", "wandelstok", "Spazierstock"], ["Passage", "young passenger", "junger Passagier"], ["Passage", "zakenman", "Geschäftsmann"], ["Passage", "zoekraken", "verlieren"], ["Passage", "zwanger", "schwanger"], ["Dagen en maanden", "dag", "Tag"], ["Dagen en maanden", "week", "Woche"], ["Dagen en maanden", "maand", "Monat"], ["Dagen en maanden", "jaar", "Jahr"], ["Dagen en maanden", "maandag", "Montag"], ["Dagen en maanden", "dinsdag", "Dienstag"], ["Dagen en maanden", "woensdag", "Mittwoch"], ["Dagen en maanden", "donderdag", "Donnerstag"], ["Dagen en maanden", "vrijdag", "Freitag"], ["Dagen en maanden", "zaterdag", "Samstag"], ["Dagen en maanden", "zondag", "Sonntag"], ["Dagen en maanden", "januari", "Januar"], ["Dagen en maanden", "februari", "Februar"], ["Dagen en maanden", "maart", "März"], ["Dagen en maanden", "april", "April"], ["Dagen en maanden", "mei", "Mai"], ["Dagen en maanden", "juni", "Juni"], ["Dagen en maanden", "juli", "Juli"], ["Dagen en maanden", "augustus", "August"], ["Dagen en maanden", "september", "September"], ["Dagen en maanden", "oktober", "Oktober"], ["Dagen en maanden", "november", "November"], ["Dagen en maanden", "december", "Dezember"], ["Dagen en maanden", "herfst", "Herbst"], ["Dagen en maanden", "voorjaar", "Frühling"], ["Dagen en maanden", "zomer", "Sommer"], ["Dagen en maanden", "winter", "Winter"], ["Dagen en maanden", "Nieuwsjaarsdag", "Neujahrstag"], ["Dagen en maanden", "Oudejaarsdag", "Silvester"], ["Dagen en maanden", "Carnaval", "Fasching"], ["Dagen en maanden", "Pasen", "Ostern"], ["Dagen en maanden", "Koninginnedag", "Königinnentag"], ["Dagen en maanden", "Dag van de Arbeid", "Tag der Arbeit"], ["Dagen en maanden", "Hemelvaartdag", "Himmelfahrstag"], ["Dagen en maanden", "Pinksteren", "Pfingsten"], ["Dagen en maanden", "Kerstmis", "Weihnachten"], ["Dagen en maanden", "Ramadan", "Ramadan"], ["Dagen en maanden", "Suikerfeest", "Zuckerfest"], ["Dagen en maanden", "Chanoeka", "Channukka"], ["Dagen en maanden", "begrafenis", "Begräbnis"], ["Dagen en maanden", "crematie", "Einäscherung"], ["Dagen en maanden", "dopen", "Taufe"], ["Dagen en maanden", "feest", "Feier"], ["Dagen en maanden", "geboorte", "Geburt"], ["Dagen en maanden", "huwelijk", "Hochzeit"], ["Dagen en maanden", "huwelijksreis", "Hochzeitsreise"], ["Dagen en maanden", "verjaardag", "Geburtstag"], ["Douane", "afkomstig uit", "stammend aus"], ["Douane", "bagage-controle", "Gepäckkontrolle"], ["Douane", "belastingvrije artikelen", "zollfreie Artikel"], ["Douane", "bestemming", "Reiseziel"], ["Douane", "binnenland", "Inland"], ["Douane", "buitenland", "Ausland"], ["Douane", "buitenlander", "Ausländer"], ["Douane", "deviezen", "Devisen"], ["Douane", "door douane gaan", "durch den Zoll gehen"], ["Douane", "douane-afhandeling", "Zollabfertigung"], ["Douane", "douane-beambte", "Zollbeamte"], ["Douane", "douane-voorschriften", "Zollvorschriften"], ["Douane", "drugs", "Drogen"], ["Douane", "emigratie", "Auswanderung"], ["Douane", "Europese Unie", "Europäische Union"], ["Douane", "fouilleren", "durchsuchen"], ["Douane", "gedeporteerde", "Deportierte(r)"], ["Douane", "gevaarlijke goederen", "gefährliche Güter"], ["Douane", "grens", "Grenze"], ["Douane", "iets aangeven", "etwas verzollen"], ["Douane", "illegaal", "illegal"], ["Douane", "immigratie", "Einwanderung"], ["Douane", "invoerrechten", "Einfuhrrechte"], ["Douane", "kofferparade", "das Gepäck identifizieren"], ["Douane", "legaal", "legal"], ["Douane", "mes", "Messer"], ["Douane", "niets aan te geven", "nichts zu verzollen"], ["Douane", "paspoort", "Pass"], ["Douane", "paspoortcontrole", "Passkontrolle"], ["Douane", "reisbescheiden", "Reisedokumente"], ["Douane", "schaar", "Schere"], ["Douane", "stempel", "Stempel"], ["Douane", "uitvoerrechten", "Ausfuhrrechte"], ["Douane", "vertrekpunt", "Abflugort"], ["Douane", "vloeibare stoffen", "Flüssigkeiten"], ["Douane", "vreemde valuta", "Fremdwährung"], ["Douane", "wapens", "Waffen"], ["Vliegtuig", "aansluiting (koptelefoon)", "Anschluss"], ["Vliegtuig", "achterdeur", "Hintertür"], ["Vliegtuig", "air-conditioning", "Klimaanlage"], ["Vliegtuig", "armleuning", "Armlehne"], ["Vliegtuig", "bagagebak", "Gepäckablage"], ["Vliegtuig", "bagageruim", "Gepäckraum"], ["Vliegtuig", "beenruimte", "Beinraum"], ["Vliegtuig", "bekleding", "Polsterung"], ["Vliegtuig", "bel", "Klingel"], ["Vliegtuig", "belly", "Frachtraum"], ["Vliegtuig", "blusapparaat", "Feuerlöscher"], ["Vliegtuig", "blussen", "löschen"], ["Vliegtuig", "business class", "Business Class"], ["Vliegtuig", "cabine", "Kabine"], ["Vliegtuig", "cockpit", "Cockpit"], ["Vliegtuig", "combo", "Combo"], ["Vliegtuig", "container", "Container"], ["Vliegtuig", "deken", "Decke"], ["Vliegtuig", "drukknop", "Druckknopf"], ["Vliegtuig", "economy class", "Economy Class"], ["Vliegtuig", "filmscherm", "Bildschirm"], ["Vliegtuig", "gangpad", "Gang"], ["Vliegtuig", "garderobe", "Garderobe"], ["Vliegtuig", "gordijn", "Vorhang"], ["Vliegtuig", "headrest cover", "Kopfschoner"], ["Vliegtuig", "individueel videosysteem", "individuelles Videosystem"], ["Vliegtuig", "in het midden", "in der Mitte"], ["Vliegtuig", "keuzeknop", "Wahlknopf"], ["Vliegtuig", "klapstoeltje", "Klappsitz"], ["Vliegtuig", "klaptafeltje", "Klapptisch"], ["Vliegtuig", "koelkast", "Kühlschrank"], ["Vliegtuig", "koffiemachine", "Kaffeemaschine"], ["Vliegtuig", "koptelefoon", "Kopfhörer"], ["Vliegtuig", "kussen", "Kopfkissen"], ["Vliegtuig", "leeslampje", "Leselampe"], ["Vliegtuig", "links", "links"], ["Vliegtuig", "losmaken", "öffnen"], ["Vliegtuig", "motor", "Motor"], ["Vliegtuig", "nooduitgang", "Notausgang"], ["Vliegtuig", "opstijgen", "aufsteigen"], ["Vliegtuig", "oven", "Ofen"], ["Vliegtuig", "overhead crew rest", "Overhead Crew Rest"], ["Vliegtuig", "P.A.S.", "Bordansagensystem"], ["Vliegtuig", "pantry", "Bordküche"], ["Vliegtuig", "privacy kap", "Blendschutz"], ["Vliegtuig", "prullenzak", "Spucktüte"], ["Vliegtuig", "raam", "Fenster"], ["Vliegtuig", "raamschermpje", "Sonnenblende"], ["Vliegtuig", "rechtop zetten", "senkrecht stellen"], ["Vliegtuig", "rechts", "rechts"], ["Vliegtuig", "romp", "Rumpf"], ["Vliegtuig", "rook", "Rauch"], ["Vliegtuig", "roteerbaar drankentafeltje", "drehbarer Getränketisch"], ["Vliegtuig", "rubberboot", "Schlauchboot"], ["Vliegtuig", "rugleuning", "Rückenlehne"], ["Vliegtuig", "staart", "Heck"], ["Vliegtuig", "staartstuk", "Heckteil"], ["Vliegtuig", "stoel", "Stuhl"], ["Vliegtuig", "stoelriem", "Gurt"], ["Vliegtuig", "stoelrij", "Stuhlreihe"], ["Vliegtuig", "stoelzak", "Sitztasche"], ["Vliegtuig", "tafeltje terug plaatsen", "den Tisch zurückklappen"], ["Vliegtuig", "tafeltje uitklappen", "den Tisch herunterklappen"], ["Vliegtuig", "tijdschriftenrek", "Zeitschriftenregal"], ["Vliegtuig", "toiletten", "Toiletten"], ["Vliegtuig", "tussenschot", "Trennwand"], ["Vliegtuig", "upperdeck", "Oberdeck"], ["Vliegtuig", "vastmaken", "anschnallen"], ["Vliegtuig", "verlengstuk", "Verlängerungsstück"], ["Vliegtuig", "verstelbare hoofdsteun", "einstellbare Kopfstütze"], ["Vliegtuig", "videoscherm", "Videoschirm"], ["Vliegtuig", "vliegtuigtrap", "Flugzeugtreppe"], ["Vliegtuig", "voetensteun", "Fußstütze"], ["Vliegtuig", "volume-regelaar", "Lautstärkeregler"], ["Vliegtuig", "voordeur", "Vordertür"], ["Vliegtuig", "vrachtdeur", "Frachttür"], ["Vliegtuig", "vrachtruim", "Frachtraum"], ["Vliegtuig", "zuurstofmasker", "Sauerstoffmaske"], ["Vliegtuig", "zwemvest", "Schwimmweste"], ["Vliegtuig", "paarden transport", "Pferdetransport"], ["Vliegtuig", "vleugel", "Flügel"], ["Problemen", "afgebroken start", "abgebrochener Start"], ["Problemen", "aswolk", "Aschewolke"], ["Problemen", "birdstrike", "Vogelschlag"], ["Problemen", "blikseminslag", "Blitzschlag"], ["Problemen", "blusapparaat", "Feuerlöscher"], ["Problemen", "blussen", "löschen"], ["Problemen", "bommelding", "Bombenmeldung"], ["Problemen", "buiklanding maken", "eine Bauchlandung machen"], ["Problemen", "decompressie", "Dekompression"], ["Problemen", "doorstart", "Durchstart"], ["Problemen", "glijbaan", "Notrutsche"], ["Problemen", "kapen", "entführen"], ["Problemen", "kaper", "Entführer"], ["Problemen", "landing op zee", "Landung auf dem Wasser"], ["Problemen", "noodlanding", "Notlandung"], ["Problemen", "noodsituatie", "Notsituation"], ["Problemen", "overshoot", "Overshoot"], ["Problemen", "rook", "Rauch"], ["Problemen", "rubberboot", "Schlauchboot"], ["Problemen", "storing", "Störung"], ["Problemen", "verbanddoos", "Verbandskasten"], ["Problemen", "verbeteren", "verbessern"], ["Problemen", "vlam", "Flamme"], ["Problemen", "zaklantaarn", "Taschenlampe"], ["Problemen", "zuurstofmasker", "Sauerstoffmaske"], ["Problemen", "zuurstoffles", "Sauerstofflasche"], ["Problemen", "zwemvest", "Schwimmweste"], ["Elektronische apparatuur", "afstandsbediening", "Fernbedienung"], ["Elektronische apparatuur", "draadloos", "drahtlos"], ["Elektronische apparatuur", "draadloze muis", "drahtlose Maus"], ["Elektronische apparatuur", "draagbare telefoon", "tragbares Telefon"], ["Elektronische apparatuur", "DVD speler", "DVD-Player"], ["Elektronische apparatuur", "electronisch spel", "elektronisches Spiel"], ["Elektronische apparatuur", "GPS-lezer", "GPS-Leser"], ["Elektronische apparatuur", "hoorapparaat", "Hörgerät"], ["Elektronische apparatuur", "inpluggen", "anschließen"], ["Elektronische apparatuur", "interferentie", "Interferenz"], ["Elektronische apparatuur", "kies instructies", "Wählanleitungen"], ["Elektronische apparatuur", "laptop", "Laptop"], ["Elektronische apparatuur", "MP3-speler", "MP3-Player"], ["Elektronische apparatuur", "ontkoppelen", "abkoppeln"], ["Elektronische apparatuur", "opladen", "aufladen"], ["Elektronische apparatuur", "oplader", "Aufladegerät"], ["Elektronische apparatuur", "pacemaker", "Herzschrittmacher"], ["Elektronische apparatuur", "printen", "drucken"], ["Elektronische apparatuur", "scanner", "Scanner"], ["Elektronische apparatuur", "stroom toevoer", "Steckdose"], ["Elektronische apparatuur", "tape-recorder", "Tonbandgerät"], ["Elektronische apparatuur", "telefoon aan de wand", "Wandtelefon"], ["Elektronische apparatuur", "stoel telefoon", "Sitztelefon"], ["Elektronische apparatuur", "touch screen", "Touchscreen"], ["Elektronische apparatuur", "transistor", "Transistorradio"], ["Elektronische apparatuur", "zender met afstandsbediening", "Sender mit Fernbedienung"], ["Beleefdheidstermen", "afgesproken", "abgemacht"], ["Beleefdheidstermen", "alles in orde?", "ist alles in Ordnung?"], ["Beleefdheidstermen", "alstublieft (aanreiking)", "bitte"], ["Beleefdheidstermen", "alstublieft (verzoek)", "bitte"], ["Beleefdheidstermen", "blijft u zitten", "bitte bleiben Sie sitzen"], ["Beleefdheidstermen", "dank u wel", "danke"], ["Beleefdheidstermen", "een ogenblikje", "einen Augenblick"], ["Beleefdheidstermen", "eet smakelijk", "guten Appetit"], ["Beleefdheidstermen", "gaat u zitten", "setzen Sie sich"], ["Beleefdheidstermen", "gaat uw gang", "bitte!"], ["Beleefdheidstermen", "goed/gaat wel", "gut/es geht"], ["Beleefdheidstermen", "goedemiddag", "guten Tag"], ["Beleefdheidstermen", "goedemorgen", "guten Morgen"], ["Beleefdheidstermen", "goedenavond", "guten Abend"], ["Beleefdheidstermen", "graag gedaan", "gern geschehen"], ["Beleefdheidstermen", "het spijt me", "Es tut mir leid"], ["Beleefdheidstermen", "hoe maakt u het?", "Wie geht es Ihnen?"], ["Beleefdheidstermen", "kan ik uw jas aannemen?", "Möchten Sie ablegen?"], ["Beleefdheidstermen", "meneer Bos", "Herr Bos"], ["Beleefdheidstermen", "meneer/mevrouw", "Herr/Frau"], ["Beleefdheidstermen", "met plezier", "mit Vergnügen"], ["Beleefdheidstermen", "mevrouw Bos", "Frau Bos"], ["Beleefdheidstermen", "mijn verontschuldigingen", "bitte entschuldigen Sie"], ["Beleefdheidstermen", "morsen", "kleckern"], ["Beleefdheidstermen", "nee, dank u", "nein, danke"], ["Beleefdheidstermen", "neemt u mij niet kwalijk", "Verzeihen Sie mir"], ["Beleefdheidstermen", "niets te danken", "gern geschehen"], ["Beleefdheidstermen", "prettige vlucht", "ich wünsche Ihnen einen guten Flug"], ["Beleefdheidstermen", "tot uw dienst", "bitte"], ["Beleefdheidstermen", "tot ziens", "auf Wiedersehen"], ["Beleefdheidstermen", "voorrang bij uitstappen", "Priorität beim Aussteigen"], ["Beleefdheidstermen", "wat zegt u?", "wie bitte?"], ["Beleefdheidstermen", "welkom", "Herzlich Willkommen"], ["Beleefdheidstermen", "welterusten", "gute Nacht"], ["Service aan boord", "ansichtkaart", "Postkarte"], ["Service aan boord", "briefpapier", "Briefpapier"], ["Service aan boord", "Delftsblauw huisje", "Miniaturhäuser Delftsblauw"], ["Service aan boord", "formulieren invullen", "Formulare ausfüllen"], ["Service aan boord", "give-away", "Werbegeschenk"], ["Service aan boord", "kleerborstel", "Kleiderbürste"], ["Service aan boord", "krant", "Zeitung"], ["Service aan boord", "lectuur", "Lektüre"], ["Service aan boord", "leeslampje", "Leselampe"], ["Service aan boord", "oordopjes", "Ohrstöpsel"], ["Service aan boord", "opfrisdoekje", "Erfrischungstuch"], ["Service aan boord", "poef", "Beinstütze"], ["Service aan boord", "schoenlepel", "Schuhlöffel"], ["Service aan boord", "slaapmasker", "Schlafmaske"], ["Service aan boord", "slofjes", "Pantoffeln"], ["Service aan boord", "stoffer en blik", "Kehrblech und Handbesen"], ["Service aan boord", "stomerijbon", "Reinigungsschein"], ["Service aan boord", "tandenborstel", "Zahnbürste"], ["Service aan boord", "tandenstoker", "Zahnstocher"], ["Service aan boord", "tandpasta", "Zahnpasta"], ["Service aan boord", "tijdschrift", "Zeitschrift"], ["Service aan boord", "toilettas", "Kulturtasche"], ["Service aan boord", "toilettasje", "Toilettenset"], ["Muziek en film", "aansluiting koptelefoon", "Anschluss"], ["Muziek en film", "afstandsbediening", "Fernbedienung"], ["Muziek en film", "koptelefoon", "Kopfhörer"], ["Muziek en film", "film draaien", "einen Film abspielen"], ["Muziek en film", "flight-tracking", "Flighttracking"], ["Muziek en film", "kanaal", "Kanal"], ["Muziek en film", "keuzeknop", "Wahlknopf"], ["Muziek en film", "keuzemenu", "Auswahlmenü"], ["Muziek en film", "knop", "Knopf"], ["Muziek en film", "naar een film kijken", "einen Film anschauen"], ["Muziek en film", "naar muziek luisteren", "Musik hören"], ["Muziek en film", "nieuws", "Nachrichten"], ["Muziek en film", "ondertitelen", "untertiteln"], ["Muziek en film", "ondertiteling", "Untertitelung"], ["Muziek en film", "opnieuw opstarten", "erneut starten"], ["Muziek en film", "personal videoprogramma", "Persönliches Videoprogramm"], ["Muziek en film", "pijltjestoets", "Pfeiltaste"], ["Muziek en film", "ruisonderdrukking", "Lärmreduzierung"], ["Muziek en film", "scherm", "Bildschirm"], ["Muziek en film", "selecteren", "auswählen"], ["Muziek en film", "spelletjes", "Spiele"], ["Muziek en film", "toegang", "Zuzgang"], ["Muziek en film", "titel", "Titel"], ["Muziek en film", "uit doen", "ausmachen"], ["Muziek en film", "volume-regelaar", "Lautstärkeregler"], ["Muziek en film", "wachten", "warten"], ["Muziek en film", "welkomstscherm", "Willkommensbildschirm"], ["Speelgoed", "balpen", "Kugelschreiber"], ["Speelgoed", "computer spelletje", "Computerspiel"], ["Speelgoed", "gum", "Radiergummi"], ["Speelgoed", "kaarten", "Karten spielen"], ["Speelgoed", "kleurboekje", "Malbuch"], ["Speelgoed", "kleuren", "malen"], ["Speelgoed", "kleurplaat", "Bild zum Ausmalen"], ["Speelgoed", "kleurpotloden", "Buntstifte"], ["Speelgoed", "knuffeldier", "Kuscheltier"], ["Speelgoed", "logboekje", "Bordbuch"], ["Speelgoed", "pen", "Stift"], ["Speelgoed", "pop", "Puppe"], ["Speelgoed", "potlood", "Bleistift"], ["Speelgoed", "prentenboek", "Bilderbuch"], ["Speelgoed", "puzzel", "Puzzle"], ["Speelgoed", "speelkaarten", "Spielkarten"], ["Speelgoed", "speldje", "Nadel"], ["Speelgoed", "sticker", "Aufkleber"], ["Speelgoed", "stripboek", "Comic"], ["Speelgoed", "tekenen", "zeichnen"], ["Babyartikelen", "baby", "Baby"], ["Babyartikelen", "babyvoeding", "Babynahrung"], ["Babyartikelen", "buggy", "Buggy"], ["Babyartikelen", "de baby verschonen", "das Baby wickeln"], ["Babyartikelen", "duimzuigen", "am Daumen lutschen"], ["Babyartikelen", "flesje", "Babyflasche"], ["Babyartikelen", "huilen", "weinen"], ["Babyartikelen", "kinderwagen", "Kinderwagen"], ["Babyartikelen", "koekje", "Keks"], ["Babyartikelen", "luier", "Windel"], ["Babyartikelen", "melk", "Milch"], ["Babyartikelen", "op de baby passen", "auf das Baby aufpassen"], ["Babyartikelen", "opwarmen", "aufwärmen"], ["Babyartikelen", "potje groenten/fruit", "Gemüse-/Obstgläschen"], ["Babyartikelen", "slaapzak", "Schlafsack"], ["Babyartikelen", "slabbetje", "Lätzchen"], ["Babyartikelen", "speen", "Schnuller"], ["Babyartikelen", "uit de wieg halen", "aus der Wiege nehmen"], ["Babyartikelen", "veiligheidsspeld", "Sicherheitsnadel"], ["Babyartikelen", "verschoontafel", "Wickeltisch"], ["Babyartikelen", "wieg", "Wiege"], ["Babyartikelen", "zalf", "Salbe"], ["Babyartikelen", "zuigen", "saugen"], ["Belastingvrije artikelen", "after shave", "Aftershave"], ["Belastingvrije artikelen", "armband", "Armband"], ["Belastingvrije artikelen", "cadeau", "Geschenk"], ["Belastingvrije artikelen", "ceintuur", "Gürtel"], ["Belastingvrije artikelen", "chocolade", "Schokolade"], ["Belastingvrije artikelen", "collier", "Kette"], ["Belastingvrije artikelen", "computerspel", "Computerspiel"], ["Belastingvrije artikelen", "contant betalen", "bar zahlen"], ["Belastingvrije artikelen", "credit card", "Kreditkarte"], ["Belastingvrije artikelen", "dollar", "Dollar"], ["Belastingvrije artikelen", "duur", "teuer"], ["Belastingvrije artikelen", "eau-de-toilette", "Eau de toilette"], ["Belastingvrije artikelen", "euro", "Euro"], ["Belastingvrije artikelen", "fototoestel", "Fotoapparat"], ["Belastingvrije artikelen", "garantiebewijs", "Garantieschein"], ["Belastingvrije artikelen", "gepast betalen", "passend zahlen"], ["Belastingvrije artikelen", "goedkoop", "billig"], ["Belastingvrije artikelen", "handcrème", "Handcreme"], ["Belastingvrije artikelen", "handtas", "Handtasche"], ["Belastingvrije artikelen", "hanger", "Anhänger"], ["Belastingvrije artikelen", "horloge", "Armbanduhr"], ["Belastingvrije artikelen", "inpakken", "einpacken"], ["Belastingvrije artikelen", "keuze", "Auswahl"], ["Belastingvrije artikelen", "kleingeld", "Kleingeld"], ["Belastingvrije artikelen", "kopen", "kaufen"], ["Belastingvrije artikelen", "kwitantie", "Quittung"], ["Belastingvrije artikelen", "lederwaren", "Lederwaren"], ["Belastingvrije artikelen", "lippenstift", "Lippenstift"], ["Belastingvrije artikelen", "make-up", "Make-up"], ["Belastingvrije artikelen", "make-up set", "Make-up-Set"], ["Belastingvrije artikelen", "manicureset", "Maniküre"], ["Belastingvrije artikelen", "met/zonder batterij", "mit/ohne Batterie"], ["Belastingvrije artikelen", "miniaturen", "Miniaturen"], ["Belastingvrije artikelen", "modelvliegtuig", "Modellflugzeug"], ["Belastingvrije artikelen", "mp3 speler", "MP3-Player"], ["Belastingvrije artikelen", "oorbellen", "Ohrringe"], ["Belastingvrije artikelen", "parfum", "Parfum"], ["Belastingvrije artikelen", "pennenset", "Schreibwaren"], ["Belastingvrije artikelen", "pond sterling", "Pfund Sterling"], ["Belastingvrije artikelen", "portefeuille", "Brieftasche"], ["Belastingvrije artikelen", "portemonnaie", "Portemonnaie"], ["Belastingvrije artikelen", "radio", "Radio"], ["Belastingvrije artikelen", "riem", "Gürtel"], ["Belastingvrije artikelen", "ring", "Ring"], ["Belastingvrije artikelen", "scheerapparaat", "Rasierapparat"], ["Belastingvrije artikelen", "shawl", "Schal"], ["Belastingvrije artikelen", "sieraden", "Schmuck"], ["Belastingvrije artikelen", "spelletje", "Spiel"], ["Belastingvrije artikelen", "stroopwafels", "Sirupwaffeln"], ["Belastingvrije artikelen", "stropdas", "Krawatte"], ["Belastingvrije artikelen", "t-shirt", "T-Shirt"], ["Belastingvrije artikelen", "tasje", "Tasche"], ["Belastingvrije artikelen", "valuta", "Währung"], ["Belastingvrije artikelen", "vaste prijs", "Festpreis"], ["Belastingvrije artikelen", "verkoop", "Verkauf"], ["Belastingvrije artikelen", "verkopen", "verkaufen"], ["Belastingvrije artikelen", "verrekijker", "Fernglas"], ["Belastingvrije artikelen", "vulpen", "Füller"], ["Belastingvrije artikelen", "wekker", "Wecker"], ["Belastingvrije artikelen", "wisselkoers", "Wechselkurs"], ["Belastingvrije artikelen", "zonnebril", "Sonnenbrille"], ["Cockpit informatie", "ATC-vertraging", "ATC-Verspätung"], ["Cockpit informatie", "de-icen", "enteisen"], ["Cockpit informatie", "de-icer", "Enteisungsmaschine"], ["Cockpit informatie", "de-ice vloeistof", "Enteisungsflüssigkeit"], ["Cockpit informatie", "hoogte", "Höhe"], ["Cockpit informatie", "kruishoogte", "Reiseflughöhe"], ["Cockpit informatie", "luchtdruk", "Luftdruck"], ["Cockpit informatie", "overhellen", "sich neigen"], ["Cockpit informatie", "slottijd", "Zeitschlitz"], ["Cockpit informatie", "staken", "streiken"], ["Cockpit informatie", "staking", "Streik"], ["Cockpit informatie", "storing", "Störung"], ["Cockpit informatie", "toestemming", "Erlaubnis"], ["Cockpit informatie", "turbulentie", "Turbulenzen"], ["Cockpit informatie", "uitwijken", "umleiten"], ["Cockpit informatie", "uitwijkhaven", "Ausweichflughafen"], ["Cockpit informatie", "verkeersleiding", "Verkehrsleitung"], ["Cockpit informatie", "vertraging", "Verspätung"], ["Cockpit informatie", "vliegen boven", "fliegen über"], ["Cockpit informatie", "wachttijd", "Wartezeit"], ["Cockpit informatie", "wind mee", "Rückenwind"], ["Cockpit informatie", "wind tegen", "Gegenwind"], ["Cockpit informatie", "zicht", "Sicht"], ["Cockpit informatie", "zijwind", "Seitenwind"], ["Weer", "bliksem", "Blitz"], ["Weer", "boven nul", "plus Grad"], ["Weer", "depressie", "Tief"], ["Weer", "dikke mist", "dichter Nebel"], ["Weer", "donder", "Donner"], ["Weer", "donderslag", "Donner"], ["Weer", "dooi", "Tau"], ["Weer", "droogte", "Dürre"], ["Weer", "gematigd klimaat", "gemäßigtes Klima"], ["Weer", "hagel", "Hagel"], ["Weer", "het bliksemt", "es blitzt"], ["Weer", "het dondert", "es donnert"], ["Weer", "het dooit", "es taut"], ["Weer", "het hagelt", "es hagelt"], ["Weer", "het is 20 graden Celsius", "es ist 20 Grad Celsius"], ["Weer", "het is bewolkt", "es ist bewölkt"], ["Weer", "het is drukkend", "es ist drückend"], ["Weer", "het is fris", "es ist kühl"], ["Weer", "het is mistig", "es ist nebelig"], ["Weer", "het is mooi weer", "es ist schönes Wetter"], ["Weer", "het is slecht weer", "es ist schlechtes Wetter"], ["Weer", "het is somber", "es ist trübes Wetter"], ["Weer", "het is zacht weer", "es ist mildes Wetter"], ["Weer", "het motregent", "es nieselt"], ["Weer", "het onweert", "es donnert"], ["Weer", "het regent", "es regnet"], ["Weer", "het sneeuwt", "es schneit"], ["Weer", "het vriest", "es friert"], ["Weer", "het waait", "es ist windig"], ["Weer", "het weer is opgeklaard", "es ist heiter"], ["Weer", "hitte", "Hitze"], ["Weer", "hittegolf", "Hitzewelle"], ["Weer", "hogedrukgebied", "Hoch"], ["Weer", "ijzel", "Eisregen"], ["Weer", "kou", "Kälte"], ["Weer", "lagedrukgebied", "Tiefdruckgebiet"], ["Weer", "landklimaat", "Landklima"], ["Weer", "mist", "Nebel"], ["Weer", "motregen", "Nieselregen"], ["Weer", "nat", "nass"], ["Weer", "nevel", "Nebel"], ["Weer", "onbewolkt", "heiter"], ["Weer", "onder nul", "minus Grad"], ["Weer", "onweer", "Gewitter"], ["Weer", "onweersbui", "Gewitterschauer"], ["Weer", "opklaring", "Aufheiterung"], ["Weer", "orkaan", "Orkan"], ["Weer", "regen", "Regen"], ["Weer", "overstroming", "Überschwemmung"], ["Weer", "regenbui", "Regenschauer"], ["Weer", "regenen", "regnen"], ["Weer", "rijp", "Rauhreif"], ["Weer", "rukwind", "Windstoß"], ["Weer", "smelten", "schmelzen"], ["Weer", "sneeuw", "Schnee"], ["Weer", "sneeuwen", "schneien"], ["Weer", "storm", "Sturm"], ["Weer", "stortregen", "Platzregen"], ["Weer", "subtropisch klimaat", "subtropisches Klima"], ["Weer", "temperatuur", "Temperatur"], ["Weer", "tropisch klimaat", "tropisches Klima"], ["Weer", "vochtig", "feucht"], ["Weer", "vorst", "Frost"], ["Weer", "vriezen", "frieren"], ["Weer", "weerbericht", "Wetterbericht"], ["Weer", "weersvoorspelling", "Wettervorhersage"], ["Weer", "wind", "Wind"], ["Weer", "windrichting", "Windrichtung"], ["Weer", "wolk", "Wolke"], ["Weer", "zeeklimaat", "Meeresklima"], ["Weer", "zicht", "Sicht"], ["Geografie", "aan zee", "am Meer"], ["Geografie", "aardbol", "Erdkugel"], ["Geografie", "Afrika", "Afrika"], ["Geografie", "akker", "Acker"], ["Geografie", "Atlantische Oceaan", "Atlantik"], ["Geografie", "Azië", "Asien"], ["Geografie", "baai", "Bucht"], ["Geografie", "badplaats", "Badeort"], ["Geografie", "beek", "Bach"], ["Geografie", "berg", "Berg"], ["Geografie", "bergketen", "Bergkette"], ["Geografie", "bevolking", "Bevölkerung"], ["Geografie", "bewoner", "Bewohner"], ["Geografie", "bloem", "Blume"], ["Geografie", "boom", "Baum"], ["Geografie", "bos", "Wald"], ["Geografie", "bron", "Quelle"], ["Geografie", "buitenwijk", "Außenviertel"], ["Geografie", "Caraïbisch gebied", "Karibik"], ["Geografie", "cultuur", "Kultur"], ["Geografie", "dal", "Tal"], ["Geografie", "delta", "Delta"], ["Geografie", "dijk", "Deich"], ["Geografie", "dorp", "Dorf"], ["Geografie", "duin", "Düne"], ["Geografie", "eb", "Ebbe"], ["Geografie", "eiland", "Insel"], ["Geografie", "evenaar", "Äquator"], ["Geografie", "Europa", "Europa"], ["Geografie", "flora en fauna", "Flora und Fauna"], ["Geografie", "gemeente", "Gemeinde"], ["Geografie", "getij", "Gezeiten"], ["Geografie", "gletsjer", "Gletscher"], ["Geografie", "golf (water)", "Welle"], ["Geografie", "gracht", "Gracht"], ["Geografie", "grens", "Grenze"], ["Geografie", "Grote Oceaan", "Pazifik"], ["Geografie", "haven", "Hafen"], ["Geografie", "heide", "Heide"], ["Geografie", "helling", "Hang"], ["Geografie", "hemel", "Himmel"], ["Geografie", "heuvel", "Hügel"], ["Geografie", "hoofdstad", "Hauptstadt"], ["Geografie", "Holland", "Holland"], ["Geografie", "Indische Oceaan", "Indischer Ozean"], ["Geografie", "kaap", "Kap"], ["Geografie", "Kanaal", "Ärmelkanal"], ["Geografie", "keerkring", "Tropen"], ["Geografie", "keizerrijk", "Kaiserreich"], ["Geografie", "kleigrond", "Lehmboden"], ["Geografie", "koninkrijk", "Königreich"], ["Geografie", "kust", "Küste"], ["Geografie", "laan", "Allee"], ["Geografie", "land", "Land"], ["Geografie", "landbouw", "Landwirtschaft"], ["Geografie", "Latijns Amerika", "Lateinamerika"], ["Geografie", "lawine", "Lawine"], ["Geografie", "lucht", "Luft"], ["Geografie", "Middellandse Zee", "Mittelmeer"], ["Geografie", "Midden-Amerika", "Mittelamerika"], ["Geografie", "Midden-Oosten", "Mittlere Osten"], ["Geografie", "meer", "See"], ["Geografie", "moeras", "Sumpf"], ["Geografie", "Nabije Oosten", "Naher Osten"], ["Geografie", "Nederland", "Niederlande"], ["Geografie", "Noord-Amerika", "Nordamerika"], ["Geografie", "noordpool", "Nordpol"], ["Geografie", "Noordzee", "Nordsee"], ["Geografie", "oceaan", "Ozean"], ["Geografie", "oerwoud", "Urwald"], ["Geografie", "omgeving", "Umgebung"], ["Geografie", "overstroming", "Überschwemmung"], ["Geografie", "plant", "Pflanze"], ["Geografie", "plantengroei", "Pflanzenwuchs"], ["Geografie", "platteland", "Land"], ["Geografie", "polder", "Polder"], ["Geografie", "provincie", "Provinz"], ["Geografie", "republiek", "Republik"], ["Geografie", "rivier", "Fluss"], ["Geografie", "riviermond", "Flussmündung"], ["Geografie", "rondweg", "Umgehungsstraße"], ["Geografie", "rots", "Felsen"], ["Geografie", "schiereiland", "Halbinsel"], ["Geografie", "snelweg", "Autobahn"], ["Geografie", "stad", "Stadt"], ["Geografie", "stadhuis", "Rathaus"], ["Geografie", "steile berg", "steiler Berg"], ["Geografie", "Stille Oceaan", "Pazifik"], ["Geografie", "straat", "Straße"], ["Geografie", "strand", "Strand"], ["Geografie", "top", "Gipfel"], ["Geografie", "tropen", "Tropen"], ["Geografie", "veeteelt", "Viehzucht"], ["Geografie", "Verenigde Staten", "Vereinigte Staaten"], ["Geografie", "Verre Oosten", "Orient"], ["Geografie", "vissershaven", "Fischerhafen"], ["Geografie", "vlakte", "Ebene"], ["Geografie", "vloed", "Flut"], ["Geografie", "volk", "Volk"], ["Geografie", "voorstad", "Vorort"], ["Geografie", "vulkaan", "Vulkan"], ["Geografie", "vulkaanas", "Vulkanasche"], ["Geografie", "vulkaanuitbarsting", "Vulkanausbruch"], ["Geografie", "waterval", "Wasserfall"], ["Geografie", "weide", "Wiese"], ["Geografie", "wereld", "Welt"], ["Geografie", "werelddeel", "Kontinent"], ["Geografie", "wereldstad", "Metropole"], ["Geografie", "woestijn", "Wüste"], ["Geografie", "woud", "Wald"], ["Geografie", "zandgrond", "Sandboden"], ["Geografie", "zandstrand", "Sandstrand"], ["Geografie", "zee", "Meer"], ["Geografie", "zeehaven", "Seehafen"], ["Geografie", "zijrivier", "Nebenfluss"], ["Geografie", "zijstraat", "Seitenstraße"], ["Geografie", "zoet water", "Süßwasser"], ["Geografie", "zout water", "Salzwasser"], ["Geografie", "Zuid-Amerika", "Südamerika"], ["Geografie", "zuidpool", "Südpol"], ["Ziekte en zorg", "aanval", "Anfall"], ["Ziekte en zorg", "angst", "Angst"], ["Ziekte en zorg", "allergie", "Allergie"], ["Ziekte en zorg", "allergisch", "allergisch"], ["Ziekte en zorg", "ambulance", "Krankenwagen"], ["Ziekte en zorg", "apotheek", "Apotheke"], ["Ziekte en zorg", "aspirine", "Aspirin"], ["Ziekte en zorg", "beademing", "Beatmung"], ["Ziekte en zorg", "been breken", "sich ein Bein brechen"], ["Ziekte en zorg", "benauwd hebben", "Atembeklemmungen haben"], ["Ziekte en zorg", "beroerte", "Schlaganfall"], ["Ziekte en zorg", "besmettelijk", "ansteckend"], ["Ziekte en zorg", "bewusteloos zijn", "bewusstlos sein"], ["Ziekte en zorg", "bleek", "blass"], ["Ziekte en zorg", "bloed", "Blut"], ["Ziekte en zorg", "bloeden", "bluten"], ["Ziekte en zorg", "bloedgroep", "Blutgruppe"], ["Ziekte en zorg", "bloedneus", "Nasenbluten"], ["Ziekte en zorg", "botbreuk", "Knochenbruch"], ["Ziekte en zorg", "brancard", "Trage"], ["Ziekte en zorg", "buikpijn", "Bauchschmerzen"], ["Ziekte en zorg", "diabeticus", "Diabetiker"], ["Ziekte en zorg", "diarree", "Durchfall"], ["Ziekte en zorg", "dokter", "Arzt"], ["Ziekte en zorg", "duizeligheid", "Schwindel"], ["Ziekte en zorg", "flauwte", "Ohnmacht"], ["Ziekte en zorg", "flauwvallen", "in Ohnmacht fallen"], ["Ziekte en zorg", "gapen", "gähnen"], ["Ziekte en zorg", "genezen", "gesund werden"], ["Ziekte en zorg", "glas water", "Glas Wasser"], ["Ziekte en zorg", "griep", "Grippe"], ["Ziekte en zorg", "hartaanval", "Herzanfall"], ["Ziekte en zorg", "hartklachten", "Herzbeschwerden"], ["Ziekte en zorg", "hartstilstand", "Herzstillstand"], ["Ziekte en zorg", "hoest", "Husten"], ["Ziekte en zorg", "hoesten", "husten"], ["Ziekte en zorg", "hoofdpijn", "Kopfschmerzen"], ["Ziekte en zorg", "huilen", "weinen"], ["Ziekte en zorg", "hyperventileren", "hyperventilieren"], ["Ziekte en zorg", "in de buurt", "in der Nähe"], ["Ziekte en zorg", "insuline", "Insulin"], ["Ziekte en zorg", "jodium", "Jod"], ["Ziekte en zorg", "kauwen", "kauen"], ["Ziekte en zorg", "keelpijn", "Halsschmerzen"], ["Ziekte en zorg", "kiespijn", "Zahnschmerzen"], ["Ziekte en zorg", "klappertanden", "zähneklappern"], ["Ziekte en zorg", "kneuzing", "Prellung"], ["Ziekte en zorg", "koorts", "Fieber"], ["Ziekte en zorg", "kruk", "Krücke"], ["Ziekte en zorg", "kunstgebit", "Zahnprothese"], ["Ziekte en zorg", "lijden aan", "leiden an"], ["Ziekte en zorg", "luchtziek", "luftkrank"], ["Ziekte en zorg", "maagpijn", "Magenschmerzen"], ["Ziekte en zorg", "maagtablet", "Magentablette"], ["Ziekte en zorg", "maandverband", "Monatsbinden"], ["Ziekte en zorg", "medicijnen", "Medikamente"], ["Ziekte en zorg", "medicijnen innemen", "Medikamente einnehmen"], ["Ziekte en zorg", "medicijnen voorschrijven", "Medikamente verschreiben"], ["Ziekte en zorg", "misselijk", "übel"], ["Ziekte en zorg", "moe", "müde"], ["Ziekte en zorg", "neusdruppels", "Nasentropfen"], ["Ziekte en zorg", "niezen", "niesen"], ["Ziekte en zorg", "ongesteld zijn", "die Regel haben"], ["Ziekte en zorg", "oogdruppels", "Augentropfen"], ["Ziekte en zorg", "oordruppels", "Ohrentropfen"], ["Ziekte en zorg", "oorpijn", "Ohrenschmerzen"], ["Ziekte en zorg", "oorsuizingen", "Ohrensausen"], ["Ziekte en zorg", "opgezwollen ledematen", "geschwollene Glieder"], ["Ziekte en zorg", "overgeven", "sich erbrechen"], ["Ziekte en zorg", "pijn", "Schmerzen"], ["Ziekte en zorg", "pijnlijk", "schmerzhaft"], ["Ziekte en zorg", "pijnstiller", "Schmerzmittel"], ["Ziekte en zorg", "pleister", "Pflaster"], ["Ziekte en zorg", "psychose", "Psychose"], ["Ziekte en zorg", "reanimeren", "reanimieren"], ["Ziekte en zorg", "rolstoel", "Rollstuhl"], ["Ziekte en zorg", "rugpijn", "Rückenschmerzen"], ["Ziekte en zorg", "shock", "Schock"], ["Ziekte en zorg", "slaapmiddel", "Schlafmittel"], ["Ziekte en zorg", "slikken", "schlucken"], ["Ziekte en zorg", "stikken", "ersticken"], ["Ziekte en zorg", "symptoom", "Symptom"], ["Ziekte en zorg", "tampon", "Tampon"], ["Ziekte en zorg", "tekort", "Mangel"], ["Ziekte en zorg", "verband", "Verband"], ["Ziekte en zorg", "verbrand zijn", "einen Sonnenbrand haben"], ["Ziekte en zorg", "verhoging", "erhöhte Temperatur"], ["Ziekte en zorg", "verkouden zijn", "erkältet sein"], ["Ziekte en zorg", "verslikken", "verschlucken"], ["Ziekte en zorg", "verstopping", "Verstopfung"], ["Ziekte en zorg", "vliegangst", "Flugangst"], ["Ziekte en zorg", "watten", "Watte"], ["Ziekte en zorg", "zich verwonden", "sich verletzen"], ["Ziekte en zorg", "ziek zijn", "krank sein"], ["Ziekte en zorg", "ziekte", "Krankheit"], ["Ziekte en zorg", "zonnesteek", "Sonnenstich"], ["Ziekte en zorg", "zwanger", "schwanger"], ["Ziekte en zorg", "zwelling", "Schwellung"], ["Ziekte en zorg", "arm", "Arm"], ["Ziekte en zorg", "been", "Bein"], ["Ziekte en zorg", "buik", "Bauch"], ["Ziekte en zorg", "enkel", "Knöchel"], ["Ziekte en zorg", "hand", "Hand"], ["Ziekte en zorg", "hoofd", "Kopf"], ["Ziekte en zorg", "keel", "Hals"], ["Ziekte en zorg", "knie", "Knie"], ["Ziekte en zorg", "mond", "Knie"], ["Ziekte en zorg", "nagel", "Nagel"], ["Ziekte en zorg", "nek", "Nacken"], ["Ziekte en zorg", "neus", "Nase"], ["Ziekte en zorg", "oog", "Auge"], ["Ziekte en zorg", "oor", "Ohr"], ["Ziekte en zorg", "pols", "Handgelenk"], ["Ziekte en zorg", "rug", "Rücken"], ["Ziekte en zorg", "schouder", "Schulter"], ["Ziekte en zorg", "sleutelbeen", "Schlüsselbein"], ["Ziekte en zorg", "tanden", "Zähne"], ["Ziekte en zorg", "teen", "Zeh"], ["Ziekte en zorg", "tong", "Zunge"], ["Ziekte en zorg", "vinger", "Finger"], ["Ziekte en zorg", "voet", "Fuß"], ["Ziekte en zorg", "voorhoofdholte", "Stirnhöhlen"], ["Ziekte en zorg", "wang", "Wange"], ["Servies", "bestek", "Besteck"], ["Servies", "bord", "Teller"], ["Servies", "deksel", "Deckel"], ["Servies", "dessertbordje", "Dessertteller"], ["Servies", "diep bord", "Suppenteller"], ["Servies", "glas", "Glas"], ["Servies", "ijsblokje", "Eiswürfel"], ["Servies", "ijskan", "Eiskühler"], ["Servies", "karaf", "Karaffe"], ["Servies", "koffiekopje", "Kaffeetasse"], ["Servies", "koffiepot", "Kaffeekanne"], ["Servies", "kop en schotel", "Tasse und Untertasse"], ["Servies", "koud", "kalt"], ["Servies", "kurketrekker", "Korkenzieher"], ["Servies", "lepel", "Löffel"], ["Servies", "lucifers", "Streichhölzer"], ["Servies", "menukaart", "Menükarte"], ["Servies", "mes", "Messer"], ["Servies", "messelegger", "Messerbänkchen"], ["Servies", "plat bord", "flacher Teller"], ["Servies", "plateau", "Tablett"], ["Servies", "plateau wegnemen", "das Tablett mitnehmen"], ["Servies", "roerstaafje", "Rührstäbchen"], ["Servies", "schotel", "Schüssel"], ["Servies", "serveren", "servieren"], ["Servies", "servet", "Serviette"], ["Servies", "taartschep", "Tortenheber"], ["Servies", "tafel afruimen", "den Tisch abräumen"], ["Servies", "tafel dekken", "den Tisch decken"], ["Servies", "tafellaken", "Tischtuch"], ["Servies", "tandenstoker", "Zahnstocher"], ["Servies", "theelepeltje", "Teelöffel"], ["Servies", "theepot", "Teekanne"], ["Servies", "vleesmes", "Fleischmesser"], ["Servies", "vork", "Gabel"], ["Servies", "wegwerpglazen", "Einweggläser"], ["Servies", "wijnglas", "Weinglas"], ["Dranken", "alcoholhoudende drank", "alkoholisches Getränk"], ["Dranken", "aperitief", "Aperitif"], ["Dranken", "appelsap", "Apfelsaft"], ["Dranken", "bier", "Bier"], ["Dranken", "borrelhapje", "Knabbergebäck"], ["Dranken", "bronwater", "Mineralwasser"], ["Dranken", "champagne", "Champagner"], ["Dranken", "cocktailkers", "Cocktailkirsche"], ["Dranken", "cocktailprikker", "Cocktailspieße"], ["Dranken", "cognac", "Cognac"], ["Dranken", "consumptie", "Verzehr"], ["Dranken", "cranberrysap", "Cranberrysaft"], ["Dranken", "dessertwijn", "Dessertwein"], ["Dranken", "digestief", "Digestif"], ["Dranken", "drank zonder alcohol", "alkoholfreies Getränk"], ["Dranken", "droge wijn", "trockener Wein"], ["Dranken", "druivensap", "Traubensaft"], ["Dranken", "frisdrank", "Erfrischungsgetränk"], ["Dranken", "gin", "Gin"], ["Dranken", "jenever", "Genever"], ["Dranken", "koffie met cognac", "Kaffee mit Cognac"], ["Dranken", "koolzuurhoudend water", "Mineralwasser"], ["Dranken", "likeur", "Likör"], ["Dranken", "limonade", "Limonade"], ["Dranken", "met citroen", "mit Zitrone"], ["Dranken", "met ijs", "mit Eis"], ["Dranken", "onderzettertje", "Untersetzer"], ["Dranken", "port", "Portwein"], ["Dranken", "rietje", "Strohhalm"], ["Dranken", "rode wijn", "Rotwein"], ["Dranken", "rosé", "Roséwein"], ["Dranken", "rum", "Rum"], ["Dranken", "sherry", "Sherry"], ["Dranken", "sinaasappelsap", "Orangensaft"], ["Dranken", "tomatensap", "Tomatensaft"], ["Dranken", "vruchtensap", "Fruchtsaft"], ["Dranken", "water zonder koolzuur", "Stilles Wasser"], ["Dranken", "whisky", "Whisky"], ["Dranken", "witte wijn", "Weißwein"], ["Dranken", "volle wijn", "lieblicher Wein"], ["Dranken", "zoete wijn", "süßer Wein"], ["Dranken", "wodka", "Wodka"], ["Dranken", "amandelen", "Mandel"], ["Dranken", "cashewnoten", "Cashewnüsse"], ["Dranken", "macadamia noten", "Macadamianüsse"], ["Dranken", "pecannoten", "Pekannüsse"], ["Dranken", "pijnboompitten", "Pinienkerne"], ["Dranken", "pinda's", "Erdnüsse"], ["Dranken", "walnoten", "Wallnüsse"], ["Dranken", "zonnebloempitten", "Sonnenblumenkerne"], ["Ontbijt", "beschuitje", "Zwieback"], ["Ontbijt", "boter", "Butter"], ["Ontbijt", "boterham", "Scheibe Brot"], ["Ontbijt", "brood", "Brot"], ["Ontbijt", "broodje", "Brötchen"], ["Ontbijt", "bruin brood", "Vollkornbrot"], ["Ontbijt", "chocolademelk", "Schokolade"], ["Ontbijt", "citroen", "Zitrone"], ["Ontbijt", "cracker", "Cracker"], ["Ontbijt", "croissant", "Croissant"], ["Ontbijt", "decaf koffie", "koffeinfreier Kaffee"], ["Ontbijt", "ei", "Ei"], ["Ontbijt", "eigeel", "Eigelb"], ["Ontbijt", "eiwit", "Eiweiß"], ["Ontbijt", "gebakken ei", "Spiegelei"], ["Ontbijt", "gekookt ei", "gekochtes Ei"], ["Ontbijt", "gepocheerd ei", "pochiertes Ei"], ["Ontbijt", "hagelslag", "Schokoladenstreusel"], ["Ontbijt", "havermout", "Haferbrei"], ["Ontbijt", "honing", "Honig"], ["Ontbijt", "jam", "Marmelade"], ["Ontbijt", "kaas", "Käse"], ["Ontbijt", "karnemelk", "Buttermilch"], ["Ontbijt", "koffie", "Kaffee"], ["Ontbijt", "koffie met melk", "Kaffee mit Milch"], ["Ontbijt", "koffieroom", "Kaffeesahne"], ["Ontbijt", "kruidenthee", "Kräutertee"], ["Ontbijt", "melk", "Milch"], ["Ontbijt", "muesli", "Müsli"], ["Ontbijt", "omelet", "Omelett"], ["Ontbijt", "ontbijtkoek", "Honigkuchen"], ["Ontbijt", "pindakaas", "Erdnussbutter"], ["Ontbijt", "roerei", "Rührei"], ["Ontbijt", "roomkaas", "Frischkäse"], ["Ontbijt", "sandwich", "Sandwich"], ["Ontbijt", "stokbrood", "Baguette"], ["Ontbijt", "suiker", "Zucker"], ["Ontbijt", "thee", "Tee"], ["Ontbijt", "toast", "Toast"], ["Ontbijt", "vleeswaren", "Aufschnitt"], ["Ontbijt", "witbrood", "Weißbrot"], ["Ontbijt", "worst", "Wurst"], ["Ontbijt", "yoghurt", "Joghurt"], ["Ontbijt", "zwarte koffie", "schwarzer Kaffee"], ["Smaak", "bitter", "bitter"], ["Smaak", "dat is lekker", "das schmeckt gut"], ["Smaak", "droog", "trocken"], ["Smaak", "flauw", "fad"], ["Smaak", "hartig", "herzhaft"], ["Smaak", "lekker", "lecker"], ["Smaak", "mager", "mager"], ["Smaak", "mals", "saftig"], ["Smaak", "niet rijp", "unreif"], ["Smaak", "pittig", "würzig"], ["Smaak", "proeven", "probieren"], ["Smaak", "rauw", "roh"], ["Smaak", "rijp", "reif"], ["Smaak", "ruiken", "riechen"], ["Smaak", "sappig", "saftig"], ["Smaak", "taai", "zäh"], ["Smaak", "vet", "fett"], ["Smaak", "vies", "unappetitlich"], ["Smaak", "wrang", "herb"], ["Smaak", "zoet", "süß"], ["Smaak", "zout", "salzig"], ["Smaak", "zuur", "sauer"], ["Maaltijden", "afkoelen", "abkühlen"], ["Maaltijden", "bakken", "backen"], ["Maaltijden", "croutons", "Croutons"], ["Maaltijden", "dessert", "Nachspeise"], ["Maaltijden", "diabetische maaltijd", "Mahlzeit für Diabetiker"], ["Maaltijden", "diepvriesmaaltijd", "Fertiggericht"], ["Maaltijden", "diner", "Abendessen"], ["Maaltijden", "eetstokjes", "Stäbchen"], ["Maaltijden", "gang (diner)", "Gang"], ["Maaltijden", "gerecht", "Gericht"], ["Maaltijden", "grillen", "grillen"], ["Maaltijden", "hoofdgerecht", "Hauptgericht"], ["Maaltijden", "hors d'oeuvre", "Vorspeise"], ["Maaltijden", "keuze", "Auswahl"], ["Maaltijden", "kindermaaltijd", "Kindermahlzeit"], ["Maaltijden", "klutsen", "schlagen"], ["Maaltijden", "koken", "kochen"], ["Maaltijden", "koshermaaltijd", "koschere Mahlzeit"], ["Maaltijden", "koude maaltijd", "kalte Mahlzeit"], ["Maaltijden", "lauw", "lau"], ["Maaltijden", "lunch", "Mittagessen"], ["Maaltijden", "maaltijd met weinig calorieën", "kalorienarme Mahlzeit"], ["Maaltijden", "moslimmaaltijd", "muslimische Mahlzeit"], ["Maaltijden", "nagerecht", "Nachspeise"], ["Maaltijden", "opwarmen", "aufwärmen"], ["Maaltijden", "parmezaanse kaas", "Parmesan"], ["Maaltijden", "pocheren", "pochieren"], ["Maaltijden", "roeren", "rühren"], ["Maaltijden", "salade", "Salat"], ["Maaltijden", "snack", "Snack"], ["Maaltijden", "speciale maaltijd", "Spezielle Mahlzeit"], ["Maaltijden", "tussengerecht", "Zwischenmahlzeit"], ["Maaltijden", "uitdelen", "austeilen"], ["Maaltijden", "veganistische maaltijd", "veganische Mahlzeit"], ["Maaltijden", "vegetarische maaltijd", "vegetarische Mahlzeit"], ["Maaltijden", "vetarm", "fettarm"], ["Maaltijden", "voorgerecht", "Vorspeise"], ["Maaltijden", "warme maaltijd", "warme Mahlzeit"], ["Maaltijden", "zoutarm", "salzarm"], ["Vlees en vis", "biefstuk", "Beefsteak"], ["Vlees en vis", "carpaccio", "Carpaccio"], ["Vlees en vis", "entrecôte", "Entrecote"], ["Vlees en vis", "gehakt", "Hackfleisch"], ["Vlees en vis", "ham", "Schinken"], ["Vlees en vis", "kalfsoester", "Kalbsmedaillon"], ["Vlees en vis", "kalfsvlees", "Kalbfleisch"], ["Vlees en vis", "karbonade", "Kotelett"], ["Vlees en vis", "lamsvlees", "Lammfleisch"], ["Vlees en vis", "ossehaas", "Rinderfilet"], ["Vlees en vis", "rundvlees", "Rindfleisch"], ["Vlees en vis", "schapenvlees", "Schaffleisch"], ["Vlees en vis", "varkensvlees", "Schweinefleisch"], ["Vlees en vis", "zwezerik", "Bries"], ["Vlees en vis", "niet gaar", "roh"], ["Vlees en vis", "medium", "rosa"], ["Vlees en vis", "doorbakken", "durchgebraten"], ["Vlees en vis", "te gaar", "zu durchgebraten"], ["Vlees en vis", "ansjovis", "Anschovis"], ["Vlees en vis", "forel", "Forelle"], ["Vlees en vis", "garnalen", "Garnelen"], ["Vlees en vis", "grote garnalen", "große Garnelen"], ["Vlees en vis", "haring", "Hering"], ["Vlees en vis", "heek", "Stockfisch"], ["Vlees en vis", "heilbot", "Heilbutt"], ["Vlees en vis", "kabeljauw", "Kabeljau"], ["Vlees en vis", "kaviaar", "Kaviar"], ["Vlees en vis", "krab", "Krabbe"], ["Vlees en vis", "kreeft", "Krebs"], ["Vlees en vis", "makreel", "Makrele"], ["Vlees en vis", "meerval", "Wels"], ["Vlees en vis", "mosselen", "Muscheln"], ["Vlees en vis", "oesters", "Austern"], ["Vlees en vis", "paling", "Aal"], ["Vlees en vis", "rivierkreeft", "Flusskrebs"], ["Vlees en vis", "schelvis", "Schellfisch"], ["Vlees en vis", "schol", "Scholle"], ["Vlees en vis", "sintjacobsschelpen", "Jakobsmuscheln"], ["Vlees en vis", "snoekbaars", "Zander"], ["Vlees en vis", "tong (vis)", "Zunge"], ["Vlees en vis", "wijting", "Wittling"], ["Vlees en vis", "zalm", "Lachs"], ["Vlees en vis", "zalmforel", "Lachsforelle"], ["Vlees en vis", "zeebaars", "Seebarsch"], ["Vlees en vis", "zeeduivel", "Seeteufel"], ["Gevogelte en wild", "eend", "Ente"], ["Gevogelte en wild", "fazant", "Fasan"], ["Gevogelte en wild", "gans", "Gans"], ["Gevogelte en wild", "ganzelever", "Gänseleber"], ["Gevogelte en wild", "haantje", "Hähnchen"], ["Gevogelte en wild", "kalkoen", "Pute"], ["Gevogelte en wild", "kip", "Huhn"], ["Gevogelte en wild", "kipfilet", "Hähnchenbrustfilet"], ["Gevogelte en wild", "kwartel", "Wachtel"], ["Gevogelte en wild", "parelhoen", "Perlhuhn"], ["Gevogelte en wild", "patrijs", "Rebhuhn"], ["Gevogelte en wild", "haas", "Hase"], ["Gevogelte en wild", "hertenbout", "Hirschkeule"], ["Gevogelte en wild", "konijn", "Kaninchen"], ["Gevogelte en wild", "reerug", "Rehrücken"], ["Gevogelte en wild", "wild zwijn", "Wildschwein"], ["Sauzen en soepen", "azijn", "Essig"], ["Sauzen en soepen", "balsamico azijn", "Balsamico-Essig"], ["Sauzen en soepen", "champignon saus", "Champignonsoße"], ["Sauzen en soepen", "dressing", "Dressing"], ["Sauzen en soepen", "kaassaus", "Käsesoße"], ["Sauzen en soepen", "kerrysaus", "Currysoße"], ["Sauzen en soepen", "mosterd", "Senf"], ["Sauzen en soepen", "olie", "Öl"], ["Sauzen en soepen", "olijfolie", "Olivenöl"], ["Sauzen en soepen", "roomsaus", "Rahmsoße"], ["Sauzen en soepen", "slasaus", "Salatsoße"], ["Sauzen en soepen", "tomatensaus", "Tomatensoße"], ["Sauzen en soepen", "vinaigrette", "Vinaigrette"], ["Sauzen en soepen", "bouillon", "Brühe"], ["Sauzen en soepen", "gebonden soep", "gebundene Suppe"], ["Sauzen en soepen", "groentesoep", "Gemüsesuppe"], ["Sauzen en soepen", "kippensoep", "Hühnersuppe"], ["Sauzen en soepen", "tomatensoep", "Tomatensuppe"], ["Aardappelen en pasta's", "aardappel", "Kartoffel"], ["Aardappelen en pasta's", "gebakken aardappelen", "Bratkartoffeln"], ["Aardappelen en pasta's", "gegratineerde aardappelen", "überbackene Kartoffeln"], ["Aardappelen en pasta's", "gekookte aardappelen", "Salzkartoffeln"], ["Aardappelen en pasta's", "gepofte aardappel", "Ofenkartoffel"], ["Aardappelen en pasta's", "lasagne", "Lasagne"], ["Aardappelen en pasta's", "macaroni", "Makkaroni"], ["Aardappelen en pasta's", "patates frites", "Pommes Frites"], ["Aardappelen en pasta's", "puree", "Porree"], ["Aardappelen en pasta's", "rijst", "Reis"], ["Aardappelen en pasta's", "spaghetti", "Spaghetti"], ["Aardappelen en pasta's", "tagliatelli", "Tagliatelli"], ["Kruiden", "basilicum", "Basilikum"], ["Kruiden", "bieslook", "Schnittlauch"], ["Kruiden", "dragon", "Estragon"], ["Kruiden", "kamille", "Kamille"], ["Kruiden", "kaneel", "Zimt"], ["Kruiden", "kervel", "Kerbel"], ["Kruiden", "knoflook", "Knoblauch"], ["Kruiden", "kruidnagel", "Gewürznelke"], ["Kruiden", "laurier", "Lorbeer"], ["Kruiden", "marjolein", "Majoran"], ["Kruiden", "munt", "Minze"], ["Kruiden", "nootmuskaat", "Muskatnuss"], ["Kruiden", "oregano", "Oregano"], ["Kruiden", "paprika-poeder", "Paprikapulver"], ["Kruiden", "peper", "Pfeffer"], ["Kruiden", "peterselie", "Petersilie"], ["Kruiden", "rozemarijn", "Rosmarin"], ["Kruiden", "selderie", "Sellerie"], ["Kruiden", "tijm", "Thymian"], ["Kruiden", "tuinkruiden", "Gartenkräuter"], ["Kruiden", "zout", "Salz"], ["Groente", "andijvie", "Endivie"], ["Groente", "artisjok", "Artischocke"], ["Groente", "asperges", "Spargel"], ["Groente", "aubergine", "Aubergine"], ["Groente", "augurk", "Gurke"], ["Groente", "avocado", "Avocado"], ["Groente", "biet", "Rote Beete"], ["Groente", "bleekselderij", "Staudensellerie"], ["Groente", "bloemkool", "Blumenkohl"], ["Groente", "boerekool", "Grünkohl"], ["Groente", "broccoli", "Brokkoli"], ["Groente", "bruine bonen", "braune Bohnen"], ["Groente", "cantharellen", "Pfifferlinge"], ["Groente", "champignons", "Pilze"], ["Groente", "courgette", "Zucchini"], ["Groente", "doperwtjes", "Erbsen"], ["Groente", "knolselderij", "Knollensellerie"], ["Groente", "komkommer", "Gurke"], ["Groente", "kool", "Kohl"], ["Groente", "kropsla", "Kopfsalat"], ["Groente", "krulsla", "Eichblattsalat"], ["Groente", "linzen", "Linsen"], ["Groente", "mais", "Mais"], ["Groente", "morille", "Morcheln"], ["Groente", "palmhartje", "Palmherz"], ["Groente", "paprika", "Paprika"], ["Groente", "peultjes", "Zuckerschoten"], ["Groente", "pompoen", "Kürbis"], ["Groente", "prei", "Lauch"], ["Groente", "rabarber", "Rhabarber"], ["Groente", "radijs", "Radieschen"], ["Groente", "rode kool", "Rotkohl"], ["Groente", "salade", "Salat"], ["Groente", "sjalot", "Schalotte"], ["Groente", "sla", "Salat"], ["Groente", "sperziebonen", "Prinzessbohnen"], ["Groente", "spruitjes", "Rosenkohl"], ["Groente", "tomaat", "Tomate"], ["Groente", "truffel", "Trüffel"], ["Groente", "ui", "Zwiebel"], ["Groente", "veldsla", "Feldsalat"], ["Groente", "venkel", "Fenchel"], ["Groente", "witlof", "Chicorée"], ["Groente", "worteltjes", "Karotten"], ["Groente", "zuurkool", "Sauerkraut"], ["Fruit", "aalbes", "Johannisbeere"], ["Fruit", "aardbei", "Erdbeere"], ["Fruit", "abrikoos", "Aprikose"], ["Fruit", "ananas", "Ananas"], ["Fruit", "appel", "Apfel"], ["Fruit", "banaan", "Banane"], ["Fruit", "braam", "Brombeere"], ["Fruit", "citroen", "Zitrone"], ["Fruit", "druif", "Traube"], ["Fruit", "framboos", "Himbeere"], ["Fruit", "grapefruit", "Grapefruit"], ["Fruit", "kers", "Kirsche"], ["Fruit", "limoen", "Limone"], ["Fruit", "mandarijn", "Mandarine"], ["Fruit", "mango", "Mango"], ["Fruit", "meloen", "Melone"], ["Fruit", "nectarine", "Nektarine"], ["Fruit", "peer", "Birne"], ["Fruit", "perzik", "Pfirsich"], ["Fruit", "pruim", "Pflaume"], ["Fruit", "rozijn", "Rosine"], ["Fruit", "sinaasappel", "Apfelsine"], ["Fruit", "watermeloen", "Wassermelone"], ["Nagerecht", "appelmoes", "Apfelmus"], ["Nagerecht", "appeltaart", "Apfelkuchen"], ["Nagerecht", "bonbon", "Praline"], ["Nagerecht", "cakeje", "Rührkuchen"], ["Nagerecht", "chocolaatje", "Schokoladenstückchen"], ["Nagerecht", "chocolade-mousse", "Mousse au Chocolat"], ["Nagerecht", "chocolade-taart", "Schokoladenkuchen"], ["Nagerecht", "gebakje", "Stück Kuchen"], ["Nagerecht", "ijs", "Eis"], ["Nagerecht", "ijs met slagroom", "Eis mit Schlagsahne"], ["Nagerecht", "ijs met vruchten", "Eis mit Früchten"], ["Nagerecht", "kaas", "Käse"], ["Nagerecht", "kaasplateau", "Käseplatte"], ["Nagerecht", "koekje", "Keks"], ["Nagerecht", "pudding", "Pudding"], ["Nagerecht", "slagroom", "Schlagsahne"], ["Nagerecht", "snoepgoed", "Süßigkeiten"], ["Nagerecht", "snoepje", "Bonbon"], ["Nagerecht", "sorbet", "Sorbet"], ["Nagerecht", "vla", "puddingähnliche Süßspeise"], ["Nagerecht", "vruchtenbavarois", "Fruchtbavarois"], ["Nagerecht", "vruchtensalade", "Obstsalat"], ["Nagerecht", "wafel", "Waffel"], ["Na de vlucht", "balkon", "Balkon"], ["Na de vlucht", "bevestigen", "bestätigen"], ["Na de vlucht", "camping", "Campingplatz"], ["Na de vlucht", "chef", "Chef"], ["Na de vlucht", "eenpersoonsbed", "Einzelbett"], ["Na de vlucht", "eenpersoonskamer", "Einzelzimmer"], ["Na de vlucht", "excursie", "Ausflug"], ["Na de vlucht", "fooi", "Trinkgeld"], ["Na de vlucht", "gids", "Reiseführer"], ["Na de vlucht", "half pension", "Halbpension"], ["Na de vlucht", "hoogseizoen", "Hochsaison"], ["Na de vlucht", "hotel", "Hotel"], ["Na de vlucht", "hoteleigenaar", "Hotelbesitzer"], ["Na de vlucht", "hotelkaart", "Formular"], ["Na de vlucht", "hotelkamer", "Hotelzimmer"], ["Na de vlucht", "hotelvoucher", "Hotelvoucher"], ["Na de vlucht", "inlichtingen inwinnen", "Auskünfte einholen"], ["Na de vlucht", "jeugdherberg", "Jugendherberge"], ["Na de vlucht", "kamer aan de binnenkant", "Zimmer auf der Innenseite"], ["Na de vlucht", "kamer aan straatkant", "Zimmer auf der Straßenseite"], ["Na de vlucht", "kamer met bad", "Zimmer mit Bad"], ["Na de vlucht", "kamer met douche", "Zimmer mit Dusche"], ["Na de vlucht", "kamermeisje", "Zimmermädchen"], ["Na de vlucht", "kok", "Koch"], ["Na de vlucht", "laagseizoen", "Vorsaison"], ["Na de vlucht", "lift", "Aufzug"], ["Na de vlucht", "ober", "Kellner"], ["Na de vlucht", "onderbrengen", "unterbringen"], ["Na de vlucht", "pension", "Pension"], ["Na de vlucht", "receptie", "Rezeption"], ["Na de vlucht", "receptioniste", "Rezeptionistin"], ["Na de vlucht", "reisleider", "Reiseleiter"], ["Na de vlucht", "rekening", "Rechnung"], ["Na de vlucht", "reserveren", "reservieren"], ["Na de vlucht", "restaurant", "Restaurant"], ["Na de vlucht", "rondvaart", "Rundfahrt"], ["Na de vlucht", "rondvaartboot", "Rundfahrtboot"], ["Na de vlucht", "room-service", "Room-Service"], ["Na de vlucht", "serveerster", "Serviererin"], ["Na de vlucht", "service", "Service"], ["Na de vlucht", "tweepersoonsbed", "Doppelbett"], ["Na de vlucht", "tweepersoonskamer", "Doppelzimmer"], ["Na de vlucht", "vol pension", "Vollpension"], ["Na de vlucht", "VVV-kantoor", "Fremdenverkehrsamt"], ["Na de vlucht", "wastafel", "Waschbecken"], ["Vervoer", "aansluiting", "Anschluss"], ["Vervoer", "autosnelweg", "Autobahn"], ["Vervoer", "autoverhuurbedrijf", "Mietwagenzentrale"], ["Vervoer", "bagagenet", "Gepäcknetz"], ["Vervoer", "bekeuring", "Strafzettel"], ["Vervoer", "benzinestation", "Tankstelle"], ["Vervoer", "conducteur", "Schaffner"], ["Vervoer", "coupé", "Abteil"], ["Vervoer", "bus missen", "den Bus verpassen"], ["Vervoer", "auto huren", "ein Auto mieten"], ["Vervoer", "fiets", "Fahrrad"], ["Vervoer", "file", "Stau"], ["Vervoer", "in de rij staan", "Schlange stehen"], ["Vervoer", "ingang van de metro", "Eingang der U-Bahn"], ["Vervoer", "instappen", "einsteigen"], ["Vervoer", "kruispunt", "Kreuzung"], ["Vervoer", "liften", "trampen"], ["Vervoer", "loket", "Schalter"], ["Vervoer", "met de auto", "mit dem Auto"], ["Vervoer", "met de boot", "mit dem Schiff"], ["Vervoer", "met de bus", "mit dem Bus"], ["Vervoer", "met de trein", "mit dem Zug"], ["Vervoer", "met het vliegtuig", "mit dem Flugzeug"], ["Vervoer", "metro", "U-Bahn"], ["Vervoer", "metrokaartje", "Fahrkarte"], ["Vervoer", "motor", "Motor"], ["Vervoer", "motorfiets", "Motorrad"], ["Vervoer", "nachttrein", "Nachtzug"], ["Vervoer", "omleiding", "Umleitung"], ["Vervoer", "openbaar vervoer", "Öffentliche Verkehrsmittel"], ["Vervoer", "opstopping", "Verkehrsstau"], ["Vervoer", "overstappen", "umsteigen"], ["Vervoer", "passeren", "überholen"], ["Vervoer", "per taxi", "mit dem Taxi"], ["Vervoer", "perron", "Bahnsteig"], ["Vervoer", "rijbewijs", "Führerschein"], ["Vervoer", "rijksweg", "Bundesstraße"], ["Vervoer", "rondweg", "Umgehungsstraße"], ["Vervoer", "rotonde", "Kreisverkehr"], ["Vervoer", "slaapplaats", "Schlafstätte"], ["Vervoer", "sneltrein", "Schnellzug"], ["Vervoer", "spitsuur", "Spitzenzeit"], ["Vervoer", "spoorwegen", "Eisenbahn"], ["Vervoer", "station", "Bahnhof"], ["Vervoer", "stationsrestauratie", "Bahnhofsrestaurant"], ["Vervoer", "stoptrein", "Nahverkehrszug"], ["Vervoer", "tanken", "tanken"], ["Vervoer", "TGV/HST/ICE", "TGV/ICE"], ["Vervoer", "tolweg", "Gebührenpflichtige Straße"], ["Vervoer", "treinkaartje", "Zugkarte"], ["Vervoer", "tunnel", "Tunnel"], ["Vervoer", "uitstappen", "aussteigen"], ["Vervoer", "verkeer", "Verkehr"], ["Vervoer", "verkeerslicht", "Verkehrsampel"], ["Vervoer", "vervoer", "Transport"], ["Vervoer", "vliegticket", "Flugschein"], ["Vervoer", "voetganger", "Fußgänger"], ["Vervoer", "weg", "Straße"], ["Vervoer", "zebrapad", "Zebrastreifen"]];
+const ALL_THEMES = ["Aardappelen en pasta's", "Babyartikelen", "Belastingvrije artikelen", "Beleefdheidstermen", "Bemanning", "Bemanningencentrum", "Cockpit informatie", "Dagen en maanden", "Douane", "Dranken", "Elektronische apparatuur", "Fruit", "Geografie", "Gevogelte en wild", "Groente", "Kruiden", "Luchthaven", "Luchtvaart", "Maaltijden", "Muziek en film", "Na de vlucht", "Nagerecht", "Ontbijt", "Passage", "Problemen", "Sauzen en soepen", "Service aan boord", "Servies", "Smaak", "Speelgoed", "Vervoer", "Vlees en vis", "Vliegtuig", "Weer", "Ziekte en zorg"];
+
+// ===== STATE =====
+let selectedThemes = new Set(ALL_THEMES);
+let direction = 'nl-de';
+let checkMode = 'fuzzy';
+let skippedWords = new Set(); // indices into ALL_WORDS
+
+// Quiz state
+let quizWords = [];       // {idx, nl, de, theme, direction, score, seen, correctStreak}
+let currentIdx = 0;
+let totalAsked = 0;
+let totalCorrect = 0;
+let sessionWrong = [];
+let quizDir = 'nl-de';
+
+// ===== LEVENSHTEIN =====
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, (_, i) => Array.from({length: n+1}, (_, j) => i === 0 ? j : j === 0 ? i : 0));
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function normalize(s) { return s.toLowerCase().trim().replace(/[.,!?;:]/g, ''); }
+
+function isCorrect(input, answer) {
+  const a = normalize(input), b = normalize(answer);
+  if (a === b) return 'exact';
+  // Also accept any of the alternatives (split by / or ,)
+  const alts = b.split(/[\/,]/).map(x => x.trim()).filter(Boolean);
+  for (const alt of alts) {
+    if (a === alt) return 'exact';
+    if (checkMode === 'fuzzy' && levenshtein(a, alt) <= 2) return 'typo';
+  }
+  if (checkMode === 'fuzzy' && levenshtein(a, b) <= 2) return 'typo';
+  return 'wrong';
+}
+
+// ===== LOCALSTORAGE =====
+function loadSkipped() {
+  try { skippedWords = new Set(JSON.parse(localStorage.getItem('skippedWords') || '[]')); } catch(e) { skippedWords = new Set(); }
+}
+function saveSkipped() {
+  localStorage.setItem('skippedWords', JSON.stringify([...skippedWords]));
+}
+
+// ===== SETUP UI =====
+function buildThemeGrid() {
+  const grid = document.getElementById('theme-grid');
+  grid.innerHTML = '';
+  for (const theme of ALL_THEMES) {
+    const count = ALL_WORDS.filter((w,i) => w[0] === theme && !skippedWords.has(i)).length;
+    const el = document.createElement('div');
+    el.className = 'theme-item' + (selectedThemes.has(theme) ? ' selected' : '');
+    el.innerHTML = `<div class="cb"></div><div class="theme-name">${theme}</div><div class="theme-count">${count}</div>`;
+    el.onclick = () => toggleTheme(theme, el);
+    grid.appendChild(el);
+  }
+  updateWordCount();
+}
+
+function toggleTheme(theme, el) {
+  if (selectedThemes.has(theme)) selectedThemes.delete(theme);
+  else selectedThemes.add(theme);
+  el.classList.toggle('selected');
+  updateWordCount();
+}
+
+function selectAll() { selectedThemes = new Set(ALL_THEMES); buildThemeGrid(); }
+function selectNone() { selectedThemes.clear(); buildThemeGrid(); }
+
+function updateWordCount() {
+  const n = ALL_WORDS.filter((w,i) => selectedThemes.has(w[0]) && !skippedWords.has(i)).length;
+  document.getElementById('word-count-info').textContent = n > 0 ? `${n} woorden geselecteerd` : 'Selecteer minimaal één thema';
+  document.getElementById('start-btn').disabled = n === 0;
+}
+
+function selectOpt(btn) {
+  const group = btn.dataset.group;
+  document.querySelectorAll(`.opt-btn[data-group="${group}"]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (group === 'dir') direction = btn.dataset.val;
+  if (group === 'check') checkMode = btn.dataset.val;
+}
+
+// ===== QUIZ LOGIC =====
+function buildQuizWords() {
+  const pool = ALL_WORDS
+    .map((w, i) => ({ idx: i, theme: w[0], nl: w[1], de: w[2] }))
+    .filter(w => selectedThemes.has(w.theme) && !skippedWords.has(w.idx));
+
+  return pool.map(w => ({
+    ...w,
+    score: 0,        // >0 = mastered rounds, <0 = missed
+    seen: false,
+    correctStreak: 0
+  }));
+}
+
+function getNextWord(words, current) {
+  // Priority: unseen first, then wrong (score < 0), then least mastered
+  const unseen = words.filter((w, i) => !w.seen && i !== current);
+  if (unseen.length > 0) return words.indexOf(unseen[Math.floor(Math.random() * Math.min(unseen.length, 3))]);
+
+  const wrong = words.filter((w, i) => w.score < 0 && i !== current);
+  if (wrong.length > 0) return words.indexOf(wrong[Math.floor(Math.random() * wrong.length)]);
+
+  const others = words.filter((w, i) => i !== current);
+  if (others.length === 0) return current;
+  return words.indexOf(others[Math.floor(Math.random() * others.length)]);
+}
+
+function startQuiz(wordsOverride) {
+  loadSkipped();
+  quizWords = wordsOverride || buildQuizWords();
+  if (quizWords.length === 0) return;
+
+  totalAsked = 0;
+  totalCorrect = 0;
+  sessionWrong = [];
+  currentIdx = 0;
+  quizDir = direction;
+
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('quiz').style.display = 'block';
+
+  showWord(0);
+}
+
+function getDisplayDir(wordIdx) {
+  if (quizDir === 'nl-de') return 'nl-de';
+  if (quizDir === 'de-nl') return 'de-nl';
+  return Math.random() < 0.5 ? 'nl-de' : 'de-nl';
+}
+
+function showWord(idx) {
+  const w = quizWords[idx];
+  w.seen = true;
+  w._dir = getDisplayDir(idx);
+
+  const question = w._dir === 'nl-de' ? w.nl : w.de;
+  const dirLabel = w._dir === 'nl-de' ? 'Wat is de Duitse vertaling van:' : 'Wat is de Nederlandse vertaling van:';
+
+  document.getElementById('word-theme').textContent = w.theme;
+  document.getElementById('word-direction').textContent = dirLabel;
+  document.getElementById('word-display').textContent = question;
+  document.getElementById('modal-word').textContent = question;
+
+  document.getElementById('answer-input').value = '';
+  document.getElementById('answer-input').disabled = false;
+  document.getElementById('answer-input').focus();
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('check-btn').disabled = false;
+  document.getElementById('next-btn').style.display = 'none';
+
+  updateStats();
+}
+
+function checkAnswer() {
+  const input = document.getElementById('answer-input').value.trim();
+  if (!input) return;
+
+  const w = quizWords[currentIdx];
+  const correctAnswer = w._dir === 'nl-de' ? w.de : w.nl;
+  const result = isCorrect(input, correctAnswer);
+
+  document.getElementById('answer-input').disabled = true;
+  document.getElementById('check-btn').disabled = true;
+  document.getElementById('next-btn').style.display = 'inline-block';
+
+  totalAsked++;
+  const fb = document.getElementById('feedback');
+
+  if (result === 'exact') {
+    fb.className = 'feedback correct';
+    fb.textContent = `✅ Goed! "${correctAnswer}"`;
+    w.score++;
+    w.correctStreak++;
+    totalCorrect++;
+  } else if (result === 'typo') {
+    fb.className = 'feedback typo';
+    fb.textContent = `⚠️ Bijna! Juist antwoord: "${correctAnswer}" (schrijffout toegestaan)`;
+    w.score++;
+    w.correctStreak++;
+    totalCorrect++;
+  } else {
+    fb.className = 'feedback wrong';
+    fb.textContent = `❌ Fout. Het juiste antwoord is: "${correctAnswer}"`;
+    w.score = Math.min(w.score - 1, -1);
+    w.correctStreak = 0;
+    if (!sessionWrong.find(x => x.idx === w.idx)) sessionWrong.push({ nl: w.nl, de: w.de });
+  }
+
+  updateStats();
+
+  // Check if quiz is done: all words mastered (streak >= 2) or no more wrong words
+  const allMastered = quizWords.every(w => w.correctStreak >= 2);
+  if (allMastered) {
+    document.getElementById('next-btn').textContent = 'Bekijk resultaat →';
+    document.getElementById('next-btn').onclick = showResult;
+  } else {
+    document.getElementById('next-btn').textContent = 'Volgende →';
+    document.getElementById('next-btn').onclick = nextWord;
+  }
+}
+
+function nextWord() {
+  currentIdx = getNextWord(quizWords, currentIdx);
+  showWord(currentIdx);
+}
+
+function updateStats() {
+  const mastered = quizWords.filter(w => w.correctStreak >= 2).length;
+  const needRepeat = quizWords.filter(w => w.seen && w.score < 0).length;
+  const unseen = quizWords.filter(w => !w.seen).length;
+  const skipped = [...skippedWords].filter(i => {
+    const w = ALL_WORDS[i];
+    return selectedThemes.has(w[0]);
+  }).length;
+
+  const pct = totalAsked > 0 ? Math.round((totalCorrect / totalAsked) * 100) : 0;
+  const total = quizWords.length;
+  const seen = quizWords.filter(w => w.seen).length;
+
+  document.getElementById('quiz-progress').textContent = `Vraag ${totalAsked + 1} · ${seen} van ${total} woorden gezien`;
+  document.getElementById('quiz-score').textContent = totalAsked > 0 ? `Score: ${pct}%` : '';
+  document.getElementById('progress-fill').style.width = `${Math.round((mastered/total)*100)}%`;
+  document.getElementById('stat-correct').textContent = mastered;
+  document.getElementById('stat-repeat').textContent = needRepeat;
+  document.getElementById('stat-unseen').textContent = unseen;
+  document.getElementById('stat-skipped').textContent = skipped;
+}
+
+function showResult() {
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
+
+  const pct = totalAsked > 0 ? Math.round((totalCorrect / totalAsked) * 100) : 0;
+  const wrong = totalAsked - totalCorrect;
+
+  document.getElementById('res-score').textContent = pct + '%';
+  document.getElementById('res-correct').textContent = totalCorrect;
+  document.getElementById('res-wrong').textContent = wrong;
+
+  if (sessionWrong.length > 0) {
+    document.getElementById('wrong-section').style.display = 'block';
+    document.getElementById('wrong-list').innerHTML = sessionWrong.map(w =>
+      `<div class="word-row"><span class="nl">${w.nl}</span><span class="de">${w.de}</span></div>`
+    ).join('');
+    document.getElementById('retry-wrong-btn').style.display = 'inline-block';
+  } else {
+    document.getElementById('wrong-section').style.display = 'none';
+    document.getElementById('retry-wrong-btn').style.display = 'none';
+  }
+
+  const skippedInSession = [...skippedWords].filter(i => {
+    const w = ALL_WORDS[i];
+    return w && selectedThemes.has(w[0]);
+  });
+
+  if (skippedInSession.length > 0) {
+    document.getElementById('skipped-section').style.display = 'block';
+    document.getElementById('skip-count').textContent = skippedInSession.length;
+    document.getElementById('skip-list').innerHTML = skippedInSession.map(i => {
+      const w = ALL_WORDS[i];
+      return `<div class="word-row"><span class="nl">${w[1]}</span><span class="de">${w[2]}</span>
+        <button onclick="restoreWord(${i})" style="font-size:12px;color:#888;background:none;border:none;cursor:pointer;text-decoration:underline">Terugzetten</button></div>`;
+    }).join('');
+  } else {
+    document.getElementById('skipped-section').style.display = 'none';
+  }
+
+  document.getElementById('result-title').textContent =
+    pct >= 80 ? '🎉 Geweldig gedaan!' : pct >= 60 ? '👍 Goed bezig!' : '💪 Blijf oefenen!';
+}
+
+function restoreWord(idx) {
+  skippedWords.delete(idx);
+  saveSkipped();
+  // Refresh skipped section
+  const skippedInSession = [...skippedWords].filter(i => {
+    const w = ALL_WORDS[i];
+    return w && selectedThemes.has(w[0]);
+  });
+  if (skippedInSession.length === 0) {
+    document.getElementById('skipped-section').style.display = 'none';
+  } else {
+    document.getElementById('skip-count').textContent = skippedInSession.length;
+    document.getElementById('skip-list').innerHTML = skippedInSession.map(i => {
+      const w = ALL_WORDS[i];
+      return `<div class="word-row"><span class="nl">${w[1]}</span><span class="de">${w[2]}</span>
+        <button onclick="restoreWord(${i})" style="font-size:12px;color:#888;background:none;border:none;cursor:pointer;text-decoration:underline">Terugzetten</button></div>`;
+    }).join('');
+  }
+  buildThemeGrid();
+}
+
+function retryWrong() {
+  const wrongIdxs = new Set(sessionWrong.map(sw => ALL_WORDS.findIndex(w => w[1] === sw.nl && w[2] === sw.de)));
+  const retryWords = quizWords.filter(w => wrongIdxs.has(w.idx)).map(w => ({...w, score: 0, seen: false, correctStreak: 0}));
+  if (retryWords.length === 0) return;
+  startQuiz(retryWords);
+}
+
+function stopQuiz() {
+  if (totalAsked > 0) showResult();
+  else goToSetup();
+}
+
+function goToSetup() {
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('setup').style.display = 'block';
+  buildThemeGrid();
+}
+
+function showSetupWithState() {
+  goToSetup();
+}
+
+// ===== SKIP MODAL =====
+function showSkipModal() {
+  document.getElementById('skip-modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('skip-modal').classList.remove('show');
+}
+function confirmSkip() {
+  const w = quizWords[currentIdx];
+  skippedWords.add(w.idx);
+  saveSkipped();
+  quizWords.splice(currentIdx, 0); // keep but mark
+  quizWords = quizWords.filter((_, i) => i !== currentIdx);
+  closeModal();
+
+  if (quizWords.length === 0) {
+    showResult();
+    return;
+  }
+  currentIdx = Math.min(currentIdx, quizWords.length - 1);
+  currentIdx = getNextWord(quizWords, -1);
+  showWord(currentIdx);
+}
+
+// ===== KEYBOARD =====
+document.getElementById('answer-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('next-btn').style.display === 'none') {
+      checkAnswer();
+    } else {
+      document.getElementById('next-btn').click();
+    }
+  }
+});
+
+// ===== INIT =====
+loadSkipped();
+buildThemeGrid();
+</script>
+</body>
+</html>
